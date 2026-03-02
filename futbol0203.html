@@ -920,7 +920,6 @@ window.recuperarPartido = function() {
     mostrarPantalla('pPartido');
     document.getElementById('bannerAutoSave').style.display = 'none';
 };
-
 // ===== EXPORTAR CSV =====
 window.exportarCSV = function() {
     const rival = document.getElementById('nombreRival').value || "RIVAL";
@@ -941,17 +940,39 @@ window.exportarCSV = function() {
         csv += `${j.num};${j.name};${Math.round(totalMins)};${j.goles || 0};${j.asistencias || 0};${j.amarillas || 0};${j.rojas || 0};"${periodosTexto}"\n`;
     });
     
-    csv += `\nCAMBIOS REALIZADOS\nMinuto;Sale;Entra\n`;
-    eventos.filter(e => e.tipo === 'CAMBIO').sort((a,b) => a.min - b.min).forEach(e => {
-        let sale = e.extra ? e.extra.replace('(sale ', '').replace(')', '') : '?';
-        csv += `${e.min}';${sale};${e.jugador}\n`;
-    });
+    // SECCIÓN DE CAMBIOS
+    const cambios = eventos.filter(e => e.tipo === 'CAMBIO');
+    if (cambios.length > 0) {
+        csv += `\nCAMBIOS REALIZADOS\nMinuto;Sale;Entra\n`;
+        cambios.sort((a,b) => a.min - b.min).forEach(e => {
+            let sale = e.extra ? e.extra.replace('(sale ', '').replace(')', '') : '?';
+            csv += `${e.min}';${sale};${e.jugador}\n`;
+        });
+    }
     
-    csv += `\nCRONICA COMPLETA\nMinuto;Equipo;Evento;Jugador;Detalle\n`;
-    eventos.forEach(e => {
-        let equipoTexto = e.equipo === rolGelves ? "GELVES" : "RIVAL";
-        csv += `${e.min}';${equipoTexto};${e.tipo};${e.jugador};${e.extra || ''}\n`;
-    });
+    // SECCIÓN DE CÓRNERS
+    const cornersGelves = eventos.filter(e => e.tipo === 'CORNER' && e.equipo === rolGelves);
+    const cornersRival = eventos.filter(e => e.tipo === 'CORNER' && e.equipo === rolRival);
+    
+    if (cornersGelves.length > 0 || cornersRival.length > 0) {
+        csv += `\nCÓRNERS\n`;
+        if (cornersGelves.length > 0) {
+            csv += `A FAVOR (GELVES): ${cornersGelves.map(e => e.min + "'").join(', ')}\n`;
+        }
+        if (cornersRival.length > 0) {
+            csv += `EN CONTRA (RIVAL): ${cornersRival.map(e => e.min + "'").join(', ')}\n`;
+        }
+    }
+    
+    // CRÓNICA COMPLETA (sin cambios ni corners)
+    csv += `\nCRÓNICA COMPLETA\nMinuto;Equipo;Evento;Jugador;Detalle\n`;
+    eventos
+        .filter(e => e.tipo !== 'CAMBIO' && e.tipo !== 'CORNER')
+        .sort((a,b) => a.min - b.min)
+        .forEach(e => {
+            let equipoTexto = e.equipo === rolGelves ? "GELVES" : "RIVAL";
+            csv += `${e.min}';${equipoTexto};${e.tipo};${e.jugador};${e.extra || ''}\n`;
+        });
     
     try {
         // Método 1: Descarga directa
@@ -975,7 +996,6 @@ window.exportarCSV = function() {
         win.document.title = nombreArchivo;
     }
 };
-
 // ===== MODAL =====
 function crearModal(titulo) {
     cerrarModal();
