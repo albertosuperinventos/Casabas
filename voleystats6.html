@@ -1,0 +1,3486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voley Stats Pro - Tomares</title>
+    <style>
+        :root { 
+            --bg: #000; 
+            --card: #1a1a1a; 
+            --libero: #f1c40f;
+            --color-tomares: #0d47a1; 
+            --color-rival: #27ae60;   
+            --timeout: #e74c3c;
+            --filial: #9b59b6;
+            --recepcion: #e67e22;
+            --pausa: #95a5a6;
+            --reanudar: #2ecc71;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--bg); 
+            color: white; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        .modal-screen { 
+            position: fixed; 
+            inset: 0; 
+            background: #000; 
+            z-index: 2000; 
+            display: none; 
+            flex-direction: column; 
+            padding: 20px; 
+            overflow-y: auto; 
+        }
+        .modal-screen.active { display: flex; }
+        
+        .config-group { 
+            background: #1a1a1a; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #333; 
+        }
+        
+        input, select { 
+            background: #333; 
+            border: 1px solid #555; 
+            color: white; 
+            padding: 12px; 
+            border-radius: 5px; 
+            width: 100%; 
+            margin: 5px 0; 
+            font-size: 1rem;
+        }
+        
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .player-card {
+            background: #222;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border: 1px solid #444;
+        }
+        
+        .player-card.filial {
+            border-color: var(--filial);
+            background: #2a1f3a;
+        }
+        
+        .player-input {
+            width: 100%;
+            padding: 8px;
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            border-radius: 4px;
+        }
+        
+        .player-dorsal {
+            width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .player-select {
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .player-select.selected {
+            background: #0d47a1;
+            border-color: #2ecc71;
+        }
+        .player-select:active { transform: scale(0.98); }
+        .player-select.libero-checked { border-color: var(--libero); }
+        
+        .player-select input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: var(--libero);
+        }
+        
+        .player-select span {
+            flex: 1;
+        }
+        
+        .sixes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: #1a4d3e;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .six-position {
+            background: #2d6a4f;
+            border: 2px solid white;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .six-position:active { transform: scale(0.95); }
+        .six-position.selected { background: #2ecc71; border-color: #f1c40f; }
+        .six-position.filled { background: #0d47a1; }
+        
+        .counter-badge {
+            background: #2ecc71;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .serve-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+        
+        .serve-option {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            background: #333;
+            border: 2px solid #555;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .serve-option:active { transform: scale(0.95); }
+        .serve-option.selected {
+            border-color: #f1c40f;
+            background: #0d47a1;
+        }
+        .serve-option.tomares { background: var(--color-tomares); }
+        .serve-option.rival { background: var(--color-rival); }
+        
+        .header { 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            background: var(--card); 
+            padding: 10px; 
+            border-bottom: 2px solid #333; 
+            position: relative; 
+        }
+        
+        .score-box { text-align: center; flex: 1; }
+        .score-container { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .score { 
+            font-size: 2.8rem;
+            font-weight: 900; 
+            line-height: 1; 
+        }
+        .quick-btn { 
+            background: #444; 
+            color: white; 
+            border: 1px solid #666; 
+            width: 36px;
+            height: 36px; 
+            border-radius: 50%; 
+            font-size: 1.3rem;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+        }
+        .sets-count { font-size: 0.9rem; color: var(--libero); margin-bottom: 5px; }
+        .team-name { font-size: 0.8rem; text-transform: uppercase; font-weight: bold; padding: 4px 12px; border-radius: 4px; }
+
+        .timer-area { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #000; 
+            padding: 8px 15px; 
+            border-bottom: 1px solid #333; 
+            gap: 10px;
+        }
+        
+        .timer-block { text-align: center; }
+        .timer-val { font-family: monospace; font-size: 1.2rem; font-weight: bold; color: #f1c40f; }
+        .timer-label { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+        
+        .pause-btn { 
+            background: var(--pausa); 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-width: 90px;
+        }
+        .pause-btn.reanudar { 
+            background: var(--reanudar); 
+        }
+        .pause-btn:active { opacity: 0.7; }
+        
+        .start-set-btn { 
+            background: #2ecc71; 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            cursor: pointer;
+            min-width: 110px;
+        }
+        .start-set-btn:active { opacity: 0.7; }
+        .start-set-btn.running { background: #444; }
+        
+        .btn-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .court-container { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: #111; 
+            padding: 10px; 
+            gap: 10px; 
+        }
+        
+        .side-btn { 
+            width: 45px; 
+            height: 140px; 
+            border: none; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+        .side-btn:active { opacity: 0.7; }
+        
+        .btn-set { background: #2980b9; }
+        .btn-endmatch { background: #e74c3c; }
+        
+        .court { 
+            width: 200px; 
+            height: 230px; 
+            background: #333; 
+            border: 2px solid white; 
+            position: relative; 
+        }
+        
+        .net { height: 4px; background: white; width: 100%; position: absolute; top: 50%; z-index: 5; }
+        .zone-grid { height: 50%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); align-items: center; justify-items: center; }
+        
+        .player { 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            border: 2px solid white; 
+            font-size: 0.8rem; 
+            color: white; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            position: relative;
+        }
+        .player:active { transform: scale(1.1); }
+        .player.serving { 
+            box-shadow: 0 0 15px #f1c40f; 
+            border: 3px solid #f1c40f; 
+            z-index: 10; 
+        }
+        .player.serving::after {
+            content: "🏐";
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            filter: drop-shadow(0 0 5px gold);
+        }
+        .player.libero { background: var(--libero) !important; color: #000; }
+        .player.filial::after { 
+            content: "F";
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--filial);
+            color: white;
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            font-size: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .player.selected-for-change {
+            border: 3px solid #f1c40f;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px gold;
+        }
+
+        .all-controls { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        
+        .control-header { 
+            padding: 8px 10px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            background: #222; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        
+        .grid-btns { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 4px; 
+            padding: 5px; 
+        }
+        
+        .btn { 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-size: 0.7rem; 
+            color: white; 
+            padding: 15px 2px; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-tomares { background: var(--color-tomares); }
+        .btn-rival { background: var(--color-rival); }
+        .btn-recepcion { background: var(--recepcion); }
+        .btn-undo { background: #444; }
+        .btn-change { background: var(--filial); }
+        .btn-stats { background: #f1c40f; color: black; }
+        .btn-disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.95); 
+            z-index: 3000; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+        }
+        .modal.active { display: flex; }
+        
+        .modal-content { 
+            background: #1a1a1a; 
+            border-radius: 15px; 
+            padding: 20px; 
+            width: 90%; 
+            max-width: 400px; 
+            max-height: 80vh; 
+            overflow-y: auto; 
+        }
+        
+        .grid-select { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+        
+        .court-zones { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+            background: #2d6a4f; 
+            padding: 15px; 
+            border: 3px solid white; 
+            border-radius: 10px; 
+            aspect-ratio: 3/2; 
+        }
+        
+        .zone-btn { 
+            background: #1e3a2f; 
+            border: 2px solid white; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 1.2rem; 
+            padding: 20px 5px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .zone-btn:active { background: #2d6a4f; }
+        
+        .btn-opt { 
+            padding: 15px 5px; 
+            border-radius: 8px; 
+            border: 1px solid white; 
+            color: white; 
+            background: #333; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .btn-opt:active { background: #444; }
+        .btn-opt.libero { border-color: var(--libero); background: #4a3f0a; }
+        
+        .log-container { 
+            height: 70px; 
+            background: #000; 
+            border-top: 1px solid #333; 
+            padding: 5px 10px; 
+            font-size: 0.7rem; 
+            color: #888; 
+            overflow-y: auto; 
+            cursor: pointer; 
+        }
+        
+        .config-btn { 
+            background: none; 
+            border: none; 
+            color: white; 
+            font-size: 1.2rem; 
+            cursor: pointer; 
+            position: absolute; 
+            left: 10px; 
+            top: 10px; 
+        }
+        
+        .primary-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+        }
+        .primary-btn:active { opacity: 0.7; }
+        .primary-btn.disabled {
+            background: #444;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        
+        .secondary-btn {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .secondary-btn:active { opacity: 0.7; }
+        
+        .bench-players {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .bench-player {
+            background: #333;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            border: 1px solid #555;
+            transition: all 0.2s;
+        }
+        .bench-player:active { background: #444; }
+        .bench-player.libero { background: #4a3f0a; }
+        .bench-player.selected-for-change {
+            border: 3px solid #f1c40f;
+            background: #0d47a1;
+            transform: scale(1.05);
+        }
+        
+        .indicator-serve {
+            font-size: 0.8rem;
+            color: #f1c40f;
+            margin-left: 5px;
+        }
+        
+        .position-indicator {
+            font-size: 0.7rem;
+            color: #888;
+            margin-left: 5px;
+        }
+        
+        .resumen-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #222;
+            border-radius: 8px;
+            margin: 5px 0;
+        }
+        
+        .set-resumen {
+            background: #333;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            padding: 5px 10px;
+            background: #111;
+            border-bottom: 1px solid #333;
+            font-size: 0.7rem;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .stat-item {
+            flex: 0 0 auto;
+            background: #222;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        .stat-value {
+            color: var(--libero);
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        
+        .recepcion-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .recepcion-btn {
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 20px 5px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+        .recepcion-btn:hover { background: #444; }
+        .recepcion-btn.selected { 
+            background: var(--recepcion); 
+            border-color: white;
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1a1a1a;
+        }
+        .stats-table th {
+            background: #333;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.7rem;
+            position: sticky;
+            top: 0;
+            color: var(--libero);
+        }
+        .stats-table td {
+            padding: 6px;
+            border-bottom: 1px solid #444;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+        .stats-table tr:hover {
+            background: #2a2a2a;
+        }
+        
+        .stats-image-container {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            width: 600px;
+        }
+
+        .cambio-dot {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #444; border: 2px solid #666;
+            transition: all 0.2s;
+        }
+        .cambio-dot.usado { background: #f1c40f; border-color: #f1c40f; }
+        .cambio-dot.maximo { background: #e74c3c; border-color: #e74c3c; }
+
+        .timeout-dot {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: #444; border: 2px solid #666;
+            transition: all 0.2s;
+        }
+        .timeout-dot.usado { background: var(--timeout); border-color: var(--timeout); }
+
+        .rec-bar {
+            display: flex; align-items: center; gap: 6px; margin: 3px 0;
+        }
+        .rec-bar-label { width: 20px; text-align:center; font-weight:bold; font-size:0.75rem; }
+        .rec-bar-fill { height: 10px; border-radius: 4px; transition: width 0.3s; min-width: 4px; }
+        .rec-bar-count { font-size: 0.75rem; color: #aaa; }
+
+        .warning-cambios {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 6px;
+            display: none;
+        }
+    </style>
+    <!-- Incluir html2canvas para capturar la imagen -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <!-- Contenedor oculto para generar la imagen de estadísticas -->
+    <div id="stats-image-container" class="stats-image-container">
+        <h2 style="text-align:center; color:#f1c40f; margin-top:0;">📊 ESTADÍSTICAS POR JUGADORA</h2>
+        <table class="stats-table" id="stats-image-table">
+            <thead>
+                <tr>
+                    <th>Dorsal</th>
+                    <th>Nombre</th>
+                    <th>Ataque</th>
+                    <th>Efectividad</th>
+                    <th>Bloqueos</th>
+                    <th>Recepción (3/2/1/0)</th>
+                    <th>Puntos</th>
+                </tr>
+            </thead>
+            <tbody id="stats-image-body">
+                <!-- Se llena con JavaScript -->
+            </tbody>
+        </table>
+        <p style="text-align:center; color:#888; margin-top:10px;">Generado el: <span id="stats-date"></span></p>
+    </div>
+
+    <!-- Pantalla 0: Configuración Inicial del Partido -->
+    <div id="screen-config-inicial" class="modal-screen">
+        <h1 style="text-align:center; color:#2ecc71">🏐 CONFIGURACIÓN DEL PARTIDO</h1>
+        
+        <div class="config-group">
+            <label>📋 NOMBRE DEL PARTIDO:</label>
+            <input type="text" id="config-match-title" value="Temporada 2024: Tomares vs Rival">
+            
+            <label>🟢 NOMBRE DEL RIVAL:</label>
+            <input type="text" id="config-rival-name" value="RIVAL">
+        </div>
+        
+        <button class="primary-btn" onclick="guardarConfigInicial()">CONTINUAR A PLANTILLA</button>
+    </div>
+
+    <!-- Pantalla 1: Plantilla General -->
+    <div id="screen-plantilla" class="modal-screen">
+        <h1 style="text-align:center; color:#2ecc71">📋 PLANTILLA GENERAL</h1>
+        
+        <div class="config-group">
+            <h3>⚪ JUGADORAS PRIMER EQUIPO</h3>
+            <div id="primer-equipo-grid" class="player-grid"></div>
+            
+            <h3 style="margin-top:20px;">🟣 JUGADORAS FILIAL</h3>
+            <div id="filial-grid" class="player-grid"></div>
+        </div>
+        
+        <button class="primary-btn" onclick="guardarPlantillaGeneral()">CONTINUAR A CONVOCATORIA</button>
+    </div>
+
+    <!-- Pantalla 2: Convocatoria (con checkbox líbero) -->
+    <div id="screen-convocatoria" class="modal-screen">
+        <h1 style="text-align:center; color:#2ecc71">📋 CONVOCATORIA (MÁX 14)</h1>
+        
+        <div class="config-group">
+            <div class="counter-badge" id="convocatoria-counter">0/14 jugadoras</div>
+            
+            <div id="convocatoria-grid" class="selection-grid"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="secondary-btn" style="flex:1;" onclick="cancelarConvocatoria()">CANCELAR</button>
+                <button class="primary-btn" style="flex:2;" id="btn-continuar-sexteto" onclick="continuarASexteto()">CONTINUAR A SEXTETO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla 3: Sexteto -->
+    <div id="screen-sexteto" class="modal-screen">
+        <h1 style="text-align:center; color:#2ecc71">🏐 SEXTETO SET <span id="set-actual-sexteto">1</span></h1>
+        
+        <div class="config-group">
+            <h3>📍 POSICIÓN DE TOMARES EN CANCHA</h3>
+            <div class="serve-selector">
+                <div id="pos-tomares-arriba" class="serve-option" onclick="seleccionarPosicionSet('V')">⬆️ ARRIBA</div>
+                <div id="pos-tomares-abajo" class="serve-option" onclick="seleccionarPosicionSet('L')">⬇️ ABAJO</div>
+            </div>
+            
+            <h3>🎯 SAQUE INICIAL</h3>
+            <div class="serve-selector">
+                <div id="serve-tomares" class="serve-option tomares" onclick="seleccionarSaqueInicial('T')">⚪ TOMARES</div>
+                <div id="serve-rival" class="serve-option rival" onclick="seleccionarSaqueInicial('R')">🟢 RIVAL</div>
+            </div>
+            
+            <h3>Posiciones en cancha</h3>
+            <div class="sixes-grid" id="sixes-grid"></div>
+            
+            <h3>Jugadoras convocadas:</h3>
+            <div id="available-players" class="bench-players"></div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="secondary-btn" style="flex:1;" onclick="cancelarSexteto()">VOLVER</button>
+                <button class="primary-btn" style="flex:2;" onclick="iniciarSetConSexteto()">INICIAR SET</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla 4: Partido -->
+    <div id="screen-partido" style="display: none; height: 100vh; flex-direction: column;">
+        <div class="header">
+            <button class="config-btn" onclick="abrirGestionRapida()">⚙️</button>
+            <div class="score-box">
+                <span id="set1" class="sets-count">Sets: 0</span>
+                <div class="score-container">
+                    <button class="quick-btn" onclick="ajustePuntos(1, -1)">-</button>
+                    <span id="pts1" class="score">0</span>
+                    <button class="quick-btn" onclick="ajustePuntos(1, 1)">+</button>
+                </div>
+                <span id="name1" class="team-name" style="background:var(--color-tomares)">TOMARES</span>
+                <span id="pos-indicator" class="position-indicator"></span>
+            </div>
+            <div class="score-box">
+                <span id="set2" class="sets-count">Sets: 0</span>
+                <div class="score-container">
+                    <button class="quick-btn" onclick="ajustePuntos(2, -1)">-</button>
+                    <span id="pts2" class="score">0</span>
+                    <button class="quick-btn" onclick="ajustePuntos(2, 1)">+</button>
+                </div>
+                <span id="name2" class="team-name" style="background:var(--color-rival)">RIVAL</span>
+                <span id="serve-indicator" class="indicator-serve"></span>
+            </div>
+        </div>
+
+        <div class="timer-area">
+            <div class="timer-block">
+                <span class="timer-label">⏱️ TOTAL</span><br>
+                <span id="time-total" class="timer-val">00:00:00</span>
+            </div>
+            
+            <button id="btn-pause" class="pause-btn" onclick="togglePausa()">
+                ⏸️ PAUSA
+            </button>
+            
+            <button id="btn-set-start" class="start-set-btn" onclick="iniciarSet()">
+                ▶️ INICIAR SET 1
+            </button>
+            
+            <div class="timer-block">
+                <span class="timer-label">🎯 SET</span><br>
+                <span id="time-set" class="timer-val">00:00</span>
+            </div>
+        </div>
+
+        <!-- Barra de estadísticas en tiempo real -->
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">🔥 Puntos: <span id="stat-puntos" class="stat-value">0</span></div>
+            <div class="stat-item">⚡ Ataque: <span id="stat-ataque" class="stat-value">0%</span></div>
+            <div class="stat-item">🛡️ Bloqueos: <span id="stat-bloqueos" class="stat-value">0</span></div>
+            <div class="stat-item">📊 Recep 3/2/1/0: <span id="stat-recepcion" class="stat-value">0-0-0-0</span></div>
+            <div class="stat-item">🎯 Máx: <span id="stat-max" class="stat-value">-</span></div>
+        </div>
+
+        <div class="court-container">
+            <button class="side-btn btn-set" onclick="confirmarFinalizarSet()">🏁 FINALIZAR<br>SET</button>
+            <div class="court">
+                <div class="net"></div>
+                <div id="top-side" class="zone-grid"></div>
+                <div id="bot-side" class="zone-grid"></div>
+            </div>
+            <button class="side-btn btn-endmatch" onclick="abrirResumenFinal()">🏆 FINALIZAR<br>PARTIDO</button>
+        </div>
+
+        <div class="all-controls">
+            <div class="control-header">
+                <span>🔵 TOMARES</span>
+                <div>
+                    <button class="btn-change" onclick="abrirCambios('T')" style="padding:3px 10px; border-radius:15px; border:none; color:white; background:var(--filial);">🔄 CAMBIOS</button>
+                    <button class="btn-stats" onclick="verEstadisticasJugadoras()" style="padding:3px 10px; border-radius:15px; border:none; color:black; background:var(--libero); margin-left:5px;">📊 STATS</button>
+                </div>
+            </div>
+            <div id="btns-t" class="grid-btns"></div>
+            
+            <div class="control-header">
+                <span>🟢 RIVAL</span>
+                <button class="btn-change" onclick="configurarRival()" style="padding:3px 10px; border-radius:15px; border:none; color:white; background:var(--color-rival);">📋 CONFIGURAR</button>
+            </div>
+            <div id="btns-r" class="grid-btns"></div>
+        </div>
+
+        <div id="log" class="log-container" onclick="verHistorialCompleto()"></div>
+    </div>
+
+    <!-- Modal Resumen Final -->
+    <div id="modal-resumen" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; color:#2ecc71">🏆 FIN DEL PARTIDO</h2>
+            
+            <div class="config-group">
+                <label>📋 NOMBRE DEL PARTIDO:</label>
+                <input type="text" id="resumen-match-title" value="">
+                
+                <label>🟢 NOMBRE DEL RIVAL:</label>
+                <input type="text" id="resumen-rival-name" value="">
+            </div>
+            
+            <h3>📊 PARCIALES</h3>
+            <div id="resumen-sets-lista" style="max-height: 150px; overflow-y: auto; margin: 10px 0;"></div>
+            
+            <h3>📊 TOTALES</h3>
+            <div class="resumen-item">
+                <span>Resultado final:</span>
+                <span id="resumen-resultado">0-0</span>
+            </div>
+            <div class="resumen-item">
+                <span>Duración total:</span>
+                <span id="resumen-tiempo">00:00:00</span>
+            </div>
+            <div class="resumen-item">
+                <span>Puntos totales:</span>
+                <span id="resumen-puntos">0</span>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="primary-btn" onclick="exportarCSV()" style="flex:1; margin-top:0;">📥 CSV</button>
+                <button class="primary-btn" onclick="exportarEstadisticasImagen()" style="flex:1; margin-top:0; background:var(--libero); color:black;">📊 ESTADÍSTICAS</button>
+            </div>
+            <button class="secondary-btn" onclick="volverAlInicio()" style="margin-top:10px;">🏠 VOLVER AL INICIO</button>
+            <button class="secondary-btn" onclick="cerrarResumen()" style="margin-top:5px;">SEGUIR EDITANDO</button>
+        </div>
+    </div>
+
+    <!-- Modal Config Rival -->
+    <div id="modal-rival" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">🟢 CONFIGURAR RIVAL</h2>
+            <p style="color:#888; margin-bottom:15px;">Dorsales opcionales</p>
+            
+            <h3>Zona 1 (Saque):</h3>
+            <input type="text" id="rival-z1" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <h3>Zona 2:</h3>
+            <input type="text" id="rival-z2" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <h3>Zona 3:</h3>
+            <input type="text" id="rival-z3" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <h3>Zona 4:</h3>
+            <input type="text" id="rival-z4" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <h3>Zona 5:</h3>
+            <input type="text" id="rival-z5" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <h3>Zona 6:</h3>
+            <input type="text" id="rival-z6" placeholder="Dorsal" style="margin-bottom:10px;">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="secondary-btn" style="flex:1;" onclick="cerrarModalRival()">CANCELAR</button>
+                <button class="primary-btn" style="flex:1;" onclick="guardarConfigRival()">GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Saque Set -->
+    <div id="modal-saque-set" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">🎯 SAQUE SET <span id="set-number">1</span></h2>
+            <div style="display: flex; gap: 15px; margin: 20px 0;">
+                <button class="serve-option tomares" style="flex:1;" onclick="setSaqueInicialSet('T')">⚪ TOMARES</button>
+                <button class="serve-option rival" style="flex:1;" onclick="setSaqueInicialSet('R')">🟢 RIVAL</button>
+            </div>
+            <button onclick="cerrarModalSaque()" class="secondary-btn" style="width:100%;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Set -->
+    <div id="modal-nuevo-set" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">🎯 SET <span id="nuevo-set-number">2</span></h2>
+            <p style="text-align:center; margin:20px 0;">¿Cambiar el sexteto?</p>
+            <div style="display: flex; gap: 15px; margin: 20px 0;">
+                <button class="serve-option tomares" style="flex:1;" onclick="mantenerMismoSexteto()">🔄 MISMO SEXTETO</button>
+                <button class="serve-option rival" style="flex:1;" onclick="cambiarSexteto()">📋 NUEVO SEXTETO</button>
+            </div>
+            <button onclick="cerrarModalNuevoSet()" class="secondary-btn" style="width:100%;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Acción -->
+    <div id="modal-accion" class="modal">
+        <div class="modal-content">
+            <h2 id="m-title" style="margin-top:0; text-align:center;"></h2>
+            <div id="m-grid" style="margin: 20px 0;"></div>
+            <button onclick="cerrarModalAccion()" class="secondary-btn" style="width:100%;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Recepción -->
+    <div id="modal-recepcion" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; color:var(--recepcion)">📥 VALORACIÓN RECEPCIÓN</h2>
+            <div class="recepcion-grid">
+                <div class="recepcion-btn" onclick="seleccionarValorRecepcion(0)">0</div>
+                <div class="recepcion-btn" onclick="seleccionarValorRecepcion(1)">1</div>
+                <div class="recepcion-btn" onclick="seleccionarValorRecepcion(2)">2</div>
+                <div class="recepcion-btn" onclick="seleccionarValorRecepcion(3)">3</div>
+            </div>
+            <p style="text-align:center; color:#888; margin:10px 0;">0=Malo, 3=Perfecto</p>
+            <button onclick="cerrarModalRecepcion()" class="secondary-btn" style="width:100%; margin-top:10px;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Estadísticas por Jugadora -->
+    <div id="modal-stats" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="text-align:center; color:var(--libero)">📊 ESTADÍSTICAS POR JUGADORA</h2>
+            <div style="max-height: 60vh; overflow-y: auto;">
+                <table class="stats-table" id="stats-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th style="text-align:left;">Nombre</th>
+                            <th>Atq/Ef%</th>
+                            <th>Bloq</th>
+                            <th>Recepción</th>
+                            <th>Pts</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-body">
+                        <!-- Se llena con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <button onclick="cerrarModalStats()" class="secondary-btn" style="width:100%; margin-top:10px;">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Cambios -->
+    <div id="modal-cambios" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">🔄 CAMBIO</h2>
+            <div id="cambios-warning" style="background:#333; border-radius:8px; padding:8px 12px; margin-bottom:10px; text-align:center; font-size:0.85rem;">
+                Cambios set: <span id="cambios-set-count" style="color:#f1c40f; font-weight:bold;">0/6</span>
+            </div>
+            <h3>En cancha (selecciona quién sale):</h3>
+            <div id="on-court-players" class="bench-players"></div>
+            <h3>Banquillo (pulsa para que entre):</h3>
+            <div id="bench-players" class="bench-players"></div>
+            <button onclick="cerrarModalCambios()" class="secondary-btn" style="width:100%; margin-top:10px;">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Bloqueo Rival -->
+    <div id="modal-bloqueo-rival" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">🟢 BLOQUEO RIVAL</h2>
+            <p style="color:#888; margin-bottom:15px;">¿A qué jugadora de Tomares bloquea?</p>
+            
+            <div id="bloqueo-jugadoras" class="bench-players" style="justify-content: center;"></div>
+            
+            <button class="secondary-btn" onclick="cerrarModalBloqueo()" style="width:100%; margin-top:10px;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Historial -->
+    <div id="modal-historial" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center;">📜 HISTORIAL</h2>
+            <!-- Selector de set -->
+            <div id="historial-filtros" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+            <div id="full-history" style="max-height: 300px; overflow-y: auto; margin: 10px 0;"></div>
+            <button onclick="cerrarModalHistorial()" class="secondary-btn" style="width:100%;">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Gestión Rápida -->
+    <div id="modal-gestion" class="modal">
+        <div class="modal-content" style="max-width:420px;">
+            <h2 style="text-align:center; margin-top:0;">⚙️ GESTIÓN RÁPIDA</h2>
+
+            <!-- Contador de cambios -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:6px; text-transform:uppercase;">🔄 Cambios del set</div>
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span id="gestion-cambios-count" style="font-size:1.8rem; font-weight:900; color:#f1c40f;">0/6</span>
+                    <div id="gestion-cambios-dots" style="display:flex; gap:5px;"></div>
+                </div>
+            </div>
+
+            <!-- Timeouts -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">⏰ Tiempos muertos</div>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1; text-align:center;">
+                        <div style="font-size:0.75rem; color:var(--color-tomares); margin-bottom:4px;">TOMARES</div>
+                        <div style="display:flex; gap:5px; justify-content:center;" id="timeouts-tomares"></div>
+                        <button onclick="usarTimeout('T')" style="margin-top:8px; background:var(--color-tomares); border:none; color:white; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">+ Usar TM</button>
+                    </div>
+                    <div style="flex:1; text-align:center;">
+                        <div style="font-size:0.75rem; color:var(--color-rival); margin-bottom:4px;">RIVAL</div>
+                        <div style="display:flex; gap:5px; justify-content:center;" id="timeouts-rival"></div>
+                        <button onclick="usarTimeout('R')" style="margin-top:8px; background:var(--color-rival); border:none; color:white; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">+ Usar TM</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen quick stats del set actual -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">📊 Set actual</div>
+                <div id="gestion-stats-set" style="font-size:0.8rem; line-height:1.8;"></div>
+            </div>
+
+            <!-- Rotación actual -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">🔃 Rotación actual Tomares</div>
+                <div id="gestion-rotacion" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+            </div>
+
+            <!-- Editar convocatoria y dorsales -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">✏️ Editar convocatoria y dorsales</div>
+                <button onclick="abrirEditarConvocatoria()" style="background:#2980b9; border:none; color:white; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">📋 EDITAR NOMBRES Y DORSALES</button>
+            </div>
+
+            <!-- Modificar último punto -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">↩️ Modificar último punto</div>
+                <div id="gestion-ultimo-punto" style="font-size:0.8rem; color:#aaa; margin-bottom:8px; min-height:18px;"></div>
+                <button onclick="abrirModificarUltimoPunto()" style="background:#e67e22; border:none; color:white; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">✏️ MODIFICAR ÚLTIMO PUNTO</button>
+            </div>
+
+            <!-- Modificar rotación -->
+            <div style="background:#222; border-radius:8px; padding:12px; margin-bottom:12px; border:1px solid #444;">
+                <div style="font-size:0.85rem; color:#888; margin-bottom:8px; text-transform:uppercase;">🔃 Modificar rotación</div>
+                <button onclick="abrirModificarRotacion()" style="background:#8e44ad; border:none; color:white; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer; width:100%;">🔃 EDITAR ROTACIÓN</button>
+            </div>
+
+            <button onclick="cerrarModalGestion()" class="secondary-btn" style="width:100%;">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Editar Convocatoria y Dorsales -->
+    <div id="modal-editar-convocatoria" class="modal">
+        <div class="modal-content" style="max-width:440px;">
+            <h2 style="text-align:center; margin-top:0;">✏️ EDITAR CONVOCATORIA</h2>
+            <p style="color:#888; font-size:0.8rem; text-align:center; margin-bottom:12px;">Modifica nombres y dorsales. Los cambios se aplican al instante.</p>
+            <div id="editar-conv-lista" style="max-height:55vh; overflow-y:auto; margin-bottom:12px;"></div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="cerrarEditarConvocatoria()" class="secondary-btn" style="flex:1;">CANCELAR</button>
+                <button onclick="guardarEdicionConvocatoria()" style="flex:2; background:#2ecc71; border:none; color:white; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">💾 GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modificar Último Punto -->
+    <div id="modal-modificar-punto" class="modal">
+        <div class="modal-content" style="max-width:440px;">
+            <h2 style="text-align:center; margin-top:0;">↩️ MODIFICAR ÚLTIMO PUNTO</h2>
+            <div id="modificar-punto-info" style="background:#1a1a1a; border-radius:8px; padding:12px; margin-bottom:15px; font-size:0.85rem; color:#aaa; border:1px solid #333;"></div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Acción -->
+                <div>
+                    <label style="color:#888; font-size:0.75rem; display:block; margin-bottom:4px;">ACCIÓN</label>
+                    <select id="mp-accion" style="width:100%; background:#333; border:1px solid #555; color:white; padding:10px; border-radius:8px; font-size:0.9rem;">
+                        <option value="ATAQUE">ATAQUE</option>
+                        <option value="BLOQUEO TOMARES">BLOQUEO TOMARES</option>
+                        <option value="SAQUE DIR">SAQUE DIRECTO</option>
+                        <option value="FINTA">FINTA</option>
+                        <option value="FALLO ATQ">FALLO ATAQUE</option>
+                        <option value="FALLO SAQ">FALLO SAQUE</option>
+                        <option value="FALLO REC">FALLO RECEPCIÓN</option>
+                        <option value="BLOQUEO RIVAL">BLOQUEO RIVAL</option>
+                    </select>
+                </div>
+                <!-- Equipo -->
+                <div>
+                    <label style="color:#888; font-size:0.75rem; display:block; margin-bottom:4px;">EQUIPO</label>
+                    <div style="display:flex; gap:8px;">
+                        <button id="mp-equipo-T" onclick="seleccionarEquipoMP('T')" style="flex:1; padding:10px; border-radius:8px; border:2px solid #2ecc71; background:#0d3a6e; color:white; font-weight:bold; cursor:pointer;">TOMARES</button>
+                        <button id="mp-equipo-R" onclick="seleccionarEquipoMP('R')" style="flex:1; padding:10px; border-radius:8px; border:2px solid #333; background:#1a1a1a; color:#888; font-weight:bold; cursor:pointer;" id="mp-equipo-R">RIVAL</button>
+                    </div>
+                </div>
+                <!-- Jugadora -->
+                <div>
+                    <label style="color:#888; font-size:0.75rem; display:block; margin-bottom:4px;">JUGADORA</label>
+                    <select id="mp-jugadora" style="width:100%; background:#333; border:1px solid #555; color:white; padding:10px; border-radius:8px; font-size:0.9rem;"></select>
+                </div>
+                <!-- Zona -->
+                <div>
+                    <label style="color:#888; font-size:0.75rem; display:block; margin-bottom:4px;">ZONA</label>
+                    <div id="mp-zonas" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; background:#1a4d3e; padding:12px; border-radius:8px;"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:15px;">
+                <button onclick="cerrarModificarPunto()" class="secondary-btn" style="flex:1;">CANCELAR</button>
+                <button onclick="guardarModificacionPunto()" style="flex:2; background:#2ecc71; border:none; color:white; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">💾 GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modificar Rotación -->
+    <div id="modal-modificar-rotacion" class="modal">
+        <div class="modal-content" style="max-width:440px;">
+            <h2 style="text-align:center; margin-top:0;">🔃 MODIFICAR ROTACIÓN</h2>
+            <p style="color:#888; font-size:0.8rem; text-align:center; margin-bottom:12px;">Toca una posición y luego otra para intercambiarlas.</p>
+            <div style="background:#1a4d3e; padding:15px; border-radius:10px; margin-bottom:15px;">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;" id="rot-grid-vis"></div>
+                <div style="height:4px; background:white; margin:10px 0; border-radius:2px;"></div>
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;" id="rot-grid-def"></div>
+            </div>
+            <div style="background:#222; border-radius:8px; padding:10px; margin-bottom:12px;">
+                <div style="font-size:0.75rem; color:#888; margin-bottom:6px;">SACADORA ACTUAL</div>
+                <div style="display:flex; gap:8px;" id="rot-server-selector"></div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="cerrarModificarRotacion()" class="secondary-btn" style="flex:1;">CANCELAR</button>
+                <button onclick="guardarModificacionRotacion()" style="flex:2; background:#2ecc71; border:none; color:white; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer;">💾 GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Convocatoria y Dorsales -->
+    <div id="modal-editar-convocatoria" class="modal">
+        <div class="modal-content" style="max-width:440px;">
+            <h2 style="text-align:center; margin-top:0;">✏️ EDITAR CONVOCATORIA</h2>
+            <p style="color:#888; font-size:0.8rem; text-align:center; margin-bottom:12px;">Modifica nombres y dorsales. Los cambios se aplican al instante.</p>
+            <div id="editar-conv-lista" style="max-height:55vh; overflow-y:auto; margin-bottom:12px;"></div>
+            <div style="display:flex; gap:8px;">
+                <button onclick="cerrarEditarConvocatoria()" class="secondary-btn" style="flex:1;">CANCELAR</button>
+                <button onclick="guardarEdicionConvocatoria()" style="flex:2; background:#2ecc71; border:none; color:white; padding:12px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95rem;">💾 GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // ============================================
+        // VARIABLES GLOBALES
+        // ============================================
+        let PLANTILLA_COMPLETA = [];
+        let FILIALES = [];
+        let CONVOCADAS = [];
+        let LIBEROS = [];
+        let SEXTETO_ACTUAL = [];
+        let saqueInicialSet = null;
+        let posicionSet = 'L';
+        let pendingBloqueoDorsal = null;
+        let pendingRecepcionValor = null;
+        
+        let setsFinalizados = [];
+        
+        let game = {
+            mTitle: 'Temporada 2024: Tomares vs Rival',
+            tPos: 'L',
+            equipoArriba: 'R',
+            rName: 'RIVAL',
+            p1: 0, p2: 0,
+            s1: 0, s2: 0,
+            setActual: 1,
+            rotT: [],
+            rotRPersonalizada: [],
+            rotRInicial: [],
+            liberos: [],
+            server: 'T',
+            saqueInicial: 'T',
+            history: [],
+            recepciones: [],
+            totalStart: 0,
+            totalElapsed: 0,
+            setStart: 0,
+            setElapsed: 0,
+            runningTotal: false,
+            runningSet: false,
+            paused: false,
+            convocadas: [],
+            banquillo: [],
+            partidoFinalizado: false,
+            cambioCampoSet5: false,
+            setsFinalizados: []
+        };
+
+        // ============================================
+        // PERSISTENCIA
+        // ============================================
+        window.onload = function() {
+            if (!window.timerInterval) {
+                window.timerInterval = setInterval(actualizarTimers, 500);
+            }
+            
+            const saved = localStorage.getItem('voleyGame');
+            if (saved) {
+                if (confirm('¿Recuperar partido anterior?')) {
+                    try {
+                        const savedGame = JSON.parse(saved);
+                        const ahora = Date.now();
+                        
+                        if (savedGame.runningTotal && !savedGame.paused) {
+                            savedGame.totalStart = ahora - savedGame.totalElapsed;
+                        }
+                        if (savedGame.runningSet && !savedGame.paused) {
+                            savedGame.setStart = ahora - savedGame.setElapsed;
+                        }
+                        
+                        game = savedGame;
+                        CONVOCADAS = game.convocadas || [];
+                        LIBEROS = game.liberos || [];
+                        setsFinalizados = game.setsFinalizados || [];
+                        
+                        document.getElementById('screen-config-inicial').classList.remove('active');
+                        document.getElementById('screen-plantilla').classList.remove('active');
+                        document.getElementById('screen-convocatoria').classList.remove('active');
+                        document.getElementById('screen-sexteto').classList.remove('active');
+                        document.getElementById('screen-partido').style.display = 'flex';
+                        
+                        const btnSet = document.getElementById('btn-set-start');
+                        if (game.runningSet) {
+                            btnSet.innerHTML = `⏸️ SET ${game.setActual} EN CURSO`;
+                            btnSet.classList.add('running');
+                        } else {
+                            btnSet.innerHTML = `▶️ INICIAR SET ${game.setActual}`;
+                            btnSet.classList.remove('running');
+                        }
+                        
+                        actualizarEstadoPausa();
+                        render();
+                        actualizarEstadisticasTiempoReal();
+                        return;
+                    } catch (e) {
+                        console.error('Error al recuperar partido', e);
+                    }
+                }
+            }
+            
+            document.getElementById('screen-config-inicial').classList.add('active');
+        };
+
+        // ============================================
+        // FUNCIÓN DE PAUSA/REANUDAR
+        // ============================================
+        function togglePausa() {
+            if (!game.runningTotal) {
+                alert('Primero debes iniciar el partido');
+                return;
+            }
+            
+            game.paused = !game.paused;
+            
+            if (game.paused) {
+                document.getElementById('btn-pause').innerHTML = '▶️ REANUDAR';
+                document.getElementById('btn-pause').classList.add('reanudar');
+            } else {
+                const ahora = Date.now();
+                if (game.runningTotal) {
+                    game.totalStart = ahora - game.totalElapsed;
+                }
+                if (game.runningSet) {
+                    game.setStart = ahora - game.setElapsed;
+                }
+                document.getElementById('btn-pause').innerHTML = '⏸️ PAUSA';
+                document.getElementById('btn-pause').classList.remove('reanudar');
+            }
+            
+            actualizarEstadoPausa();
+            guardarPartido();
+        }
+
+        function actualizarEstadoPausa() {
+            const btnsTomares = document.querySelectorAll('#btns-t .btn');
+            const btnsRival = document.querySelectorAll('#btns-r .btn');
+            const btnsCambios = document.querySelectorAll('.btn-change');
+            const btnsStats = document.querySelectorAll('.btn-stats');
+            const btnsQuick = document.querySelectorAll('.quick-btn');
+            const btnsSide = document.querySelectorAll('.side-btn');
+            
+            if (game.paused) {
+                btnsTomares.forEach(btn => btn.classList.add('btn-disabled'));
+                btnsRival.forEach(btn => btn.classList.add('btn-disabled'));
+                btnsCambios.forEach(btn => btn.classList.add('btn-disabled'));
+                btnsStats.forEach(btn => btn.classList.add('btn-disabled'));
+                btnsQuick.forEach(btn => btn.classList.add('btn-disabled'));
+                btnsSide.forEach(btn => {
+                    if (!btn.classList.contains('btn-endmatch')) {
+                        btn.classList.add('btn-disabled');
+                    }
+                });
+            } else {
+                btnsTomares.forEach(btn => btn.classList.remove('btn-disabled'));
+                btnsRival.forEach(btn => btn.classList.remove('btn-disabled'));
+                btnsCambios.forEach(btn => btn.classList.remove('btn-disabled'));
+                btnsStats.forEach(btn => btn.classList.remove('btn-disabled'));
+                btnsQuick.forEach(btn => btn.classList.remove('btn-disabled'));
+                btnsSide.forEach(btn => btn.classList.remove('btn-disabled'));
+            }
+        }
+
+        // ============================================
+        // NUEVA FUNCIÓN: EXPORTAR ESTADÍSTICAS COMO IMAGEN
+        // ============================================
+        function exportarEstadisticasImagen() {
+            // Actualizar el título y la fecha
+            const ahora = new Date();
+            const fecha = `${ahora.getDate().toString().padStart(2,'0')}/${(ahora.getMonth()+1).toString().padStart(2,'0')}/${ahora.getFullYear()} ${ahora.getHours().toString().padStart(2,'0')}:${ahora.getMinutes().toString().padStart(2,'0')}`;
+            document.getElementById('stats-date').innerText = fecha;
+            
+            // Generar las estadísticas en el contenedor oculto
+            const stats = {};
+            
+            game.convocadas.forEach(j => {
+                stats[j.d] = {
+                    nombre: j.n,
+                    dorsal: j.d,
+                    ataques: 0,
+                    ataquesExitosos: 0,
+                    bloqueos: 0,
+                    recepciones: [],
+                    puntos: 0
+                };
+            });
+            
+            game.history.forEach(h => {
+                if (h.equipo !== 'TOMARES') return;
+                
+                const dorsal = h.dorsal;
+                if (!dorsal || dorsal === '?') return;
+                
+                if (!stats[dorsal]) return;
+                
+                if (h.accion === 'ATAQUE') {
+                    stats[dorsal].ataques++;
+                    stats[dorsal].ataquesExitosos++;
+                    stats[dorsal].puntos++;
+                }
+                if (h.accion === 'FALLO ATQ') {
+                    stats[dorsal].ataques++;
+                }
+                
+                if (h.accion === 'BLOQUEO TOMARES') {
+                    stats[dorsal].bloqueos++;
+                    stats[dorsal].puntos++;
+                }
+                
+                if (h.accion === 'SAQUE DIR') {
+                    stats[dorsal].puntos++;
+                }
+                
+                if (h.accion === 'FINTA') {
+                    stats[dorsal].puntos++;
+                }
+            });
+            
+            if (game.recepciones) {
+                game.recepciones.forEach(r => {
+                    if (r.dorsal && stats[r.dorsal]) {
+                        stats[r.dorsal].recepciones.push(r.valor);
+                    }
+                });
+            }
+            
+            const tbody = document.getElementById('stats-image-body');
+            tbody.innerHTML = '';
+            
+            Object.values(stats).forEach(s => {
+                const efectividad = s.ataques > 0 ? Math.round((s.ataquesExitosos / s.ataques) * 100) : 0;
+                
+                const r3 = s.recepciones.filter(v => v === 3).length;
+                const r2 = s.recepciones.filter(v => v === 2).length;
+                const r1 = s.recepciones.filter(v => v === 1).length;
+                const r0 = s.recepciones.filter(v => v === 0).length;
+                const totalRec = r3 + r2 + r1 + r0;
+                
+                let recepcionStr = '-';
+                if (totalRec > 0) {
+                    recepcionStr = `${r3}/${r2}/${r1}/${r0}`;
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${s.dorsal}</td>
+                    <td>${s.nombre}</td>
+                    <td>${s.ataquesExitosos}/${s.ataques}</td>
+                    <td>${efectividad}%</td>
+                    <td>${s.bloqueos}</td>
+                    <td>${recepcionStr}</td>
+                    <td>${s.puntos}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Capturar el contenedor como imagen
+            const container = document.getElementById('stats-image-container');
+            
+            html2canvas(container, {
+                scale: 2,
+                backgroundColor: '#1a1a1a'
+            }).then(canvas => {
+                // Crear enlace de descarga
+                const link = document.createElement('a');
+                link.download = `estadisticas_${game.rName}_${ahora.toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        // ============================================
+        // CONFIGURACIÓN INICIAL
+        // ============================================
+        function guardarConfigInicial() {
+            game.mTitle = document.getElementById('config-match-title').value;
+            game.rName = document.getElementById('config-rival-name').value.toUpperCase();
+            
+            document.getElementById('screen-config-inicial').classList.remove('active');
+            initPlantilla();
+        }
+
+        // ============================================
+        // PANTALLA 1: PLANTILLA
+        // ============================================
+        function initPlantilla() {
+            const primerEquipo = document.getElementById('primer-equipo-grid');
+            primerEquipo.innerHTML = '';
+            
+            const jugadoras = [
+                {dorsal: '4', nombre: 'Judit'},
+                {dorsal: '7', nombre: 'Cuenco'},
+                {dorsal: '8', nombre: 'Zita'},
+                {dorsal: '9', nombre: 'Llara'},
+                {dorsal: '11', nombre: 'Michi'},
+                {dorsal: '12', nombre: 'Paula'},
+                {dorsal: '13', nombre: 'Marina'},
+                {dorsal: '14', nombre: 'Celia'},
+                {dorsal: '17', nombre: 'Carlota'},
+                {dorsal: '18', nombre: 'Lola'},
+                {dorsal: '19', nombre: 'Carmela'},
+                {dorsal: '19', nombre: 'Espi'},
+                {dorsal: '2', nombre: 'Xana'},
+                {dorsal: '3', nombre: 'Sanchez'},
+                {dorsal: '16', nombre: 'Irene'},
+                {dorsal: '2', nombre: 'Pia'},
+                {dorsal: '3', nombre: 'Lidia'},
+                {dorsal: '20', nombre: 'Claudia'},
+                {dorsal: '13', nombre: 'Marina'},
+                {dorsal: '26', nombre: 'Martina'}
+            ];
+            
+            for (let i = 0; i < 20; i++) {
+                const dorsal = i < jugadoras.length ? jugadoras[i].dorsal : (i+1).toString();
+                const nombre = i < jugadoras.length ? jugadoras[i].nombre : `Jugadora ${i+1}`;
+                
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                    <input type="text" class="player-dorsal" id="dorsal-${i}" value="${dorsal}">
+                    <input type="text" class="player-input" id="nombre-${i}" value="${nombre}">
+                `;
+                primerEquipo.appendChild(card);
+            }
+            
+            const filialGrid = document.getElementById('filial-grid');
+            filialGrid.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
+                const card = document.createElement('div');
+                card.className = 'player-card filial';
+                card.innerHTML = `
+                    <input type="text" class="player-dorsal" id="filial-dorsal-${i}" value="${30+i}">
+                    <input type="text" class="player-input" id="filial-nombre-${i}" value="Filial ${i+1}">
+                `;
+                filialGrid.appendChild(card);
+            }
+            
+            document.getElementById('screen-plantilla').classList.add('active');
+        }
+
+        function guardarPlantillaGeneral() {
+            PLANTILLA_COMPLETA = [];
+            FILIALES = [];
+            
+            for (let i = 0; i < 20; i++) {
+                const dorsal = document.getElementById(`dorsal-${i}`)?.value;
+                const nombre = document.getElementById(`nombre-${i}`)?.value;
+                if (dorsal?.trim() && nombre?.trim()) {
+                    PLANTILLA_COMPLETA.push({
+                        d: dorsal.trim(),
+                        n: nombre.trim(),
+                        filial: false
+                    });
+                }
+            }
+            
+            for (let i = 0; i < 4; i++) {
+                const dorsal = document.getElementById(`filial-dorsal-${i}`)?.value;
+                const nombre = document.getElementById(`filial-nombre-${i}`)?.value;
+                if (dorsal?.trim() && nombre?.trim()) {
+                    FILIALES.push({
+                        d: dorsal.trim(),
+                        n: nombre.trim(),
+                        filial: true
+                    });
+                }
+            }
+            
+            document.getElementById('screen-plantilla').classList.remove('active');
+            cargarConvocatoria();
+        }
+
+        // ============================================
+        // PANTALLA 2: CONVOCATORIA
+        // ============================================
+        function cargarConvocatoria() {
+            const todas = [...PLANTILLA_COMPLETA, ...FILIALES];
+            const grid = document.getElementById('convocatoria-grid');
+            grid.innerHTML = '';
+            
+            todas.forEach((jug, index) => {
+                const div = document.createElement('div');
+                div.className = 'player-select';
+                div.id = `convocada-${index}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.onclick = (e) => e.stopPropagation();
+                
+                const span = document.createElement('span');
+                span.innerText = `${jug.d} - ${jug.n}`;
+                
+                div.appendChild(checkbox);
+                div.appendChild(span);
+                
+                div.onclick = (e) => {
+                    if (e.target !== checkbox) {
+                        toggleConvocada(index, jug, checkbox);
+                    }
+                };
+                
+                grid.appendChild(div);
+            });
+            
+            document.getElementById('screen-convocatoria').classList.add('active');
+        }
+
+        function toggleConvocada(index, jug, checkbox) {
+            const elemento = document.getElementById(`convocada-${index}`);
+            
+            if (CONVOCADAS.some(j => j.d === jug.d && j.n === jug.n)) {
+                CONVOCADAS = CONVOCADAS.filter(j => !(j.d === jug.d && j.n === jug.n));
+                elemento.classList.remove('selected');
+                checkbox.checked = false;
+            } else {
+                if (CONVOCADAS.length >= 14) {
+                    alert('Máximo 14 jugadoras');
+                    checkbox.checked = false;
+                    return;
+                }
+                CONVOCADAS.push({...jug});
+                elemento.classList.add('selected');
+            }
+            
+            actualizarContadorConvocatoria();
+        }
+
+        function actualizarContadorConvocatoria() {
+            document.getElementById('convocatoria-counter').innerText = `${CONVOCADAS.length}/14 jugadoras`;
+            
+            const btn = document.getElementById('btn-continuar-sexteto');
+            if (CONVOCADAS.length >= 6) {
+                btn.classList.remove('disabled');
+            } else {
+                btn.classList.add('disabled');
+            }
+        }
+
+        function cancelarConvocatoria() {
+            if (confirm('¿Volver a plantilla?')) {
+                CONVOCADAS = [];
+                document.getElementById('screen-convocatoria').classList.remove('active');
+                document.getElementById('screen-plantilla').classList.add('active');
+            }
+        }
+
+        function continuarASexteto() {
+            if (CONVOCADAS.length < 6) {
+                alert('Mínimo 6 jugadoras');
+                return;
+            }
+            
+            LIBEROS = [];
+            document.querySelectorAll('#convocatoria-grid .player-select').forEach((div, index) => {
+                if (div.classList.contains('selected')) {
+                    const checkbox = div.querySelector('input[type="checkbox"]');
+                    if (checkbox.checked) {
+                        const jug = CONVOCADAS.find(j => 
+                            j.d === div.querySelector('span').innerText.split(' - ')[0]
+                        );
+                        if (jug) LIBEROS.push(jug.d);
+                    }
+                }
+            });
+            
+            document.getElementById('screen-convocatoria').classList.remove('active');
+            cargarSexteto(1);
+        }
+
+        // ============================================
+        // PANTALLA 3: SEXTETO
+        // ============================================
+        function cargarSexteto(numSet) {
+            document.getElementById('set-actual-sexteto').innerText = numSet;
+            
+            document.getElementById('pos-tomares-arriba').classList.remove('selected');
+            document.getElementById('pos-tomares-abajo').classList.remove('selected');
+            document.getElementById('serve-tomares').classList.remove('selected');
+            document.getElementById('serve-rival').classList.remove('selected');
+            
+            if (numSet === 1) {
+                document.getElementById('pos-tomares-abajo').classList.add('selected');
+                posicionSet = 'L';
+            } else {
+                posicionSet = null;
+            }
+            
+            const sixesGrid = document.getElementById('sixes-grid');
+            sixesGrid.innerHTML = '';
+            
+            const posiciones = [
+                {num: 4, nombre: 'Delantera Izq'},
+                {num: 3, nombre: 'Delantera Centro'},
+                {num: 2, nombre: 'Delantera Der'},
+                {num: 5, nombre: 'Defensa Izq'},
+                {num: 6, nombre: 'Defensa Centro'},
+                {num: 1, nombre: 'Defensa Der (Saque)'}
+            ];
+            
+            posiciones.forEach(p => {
+                const pos = document.createElement('div');
+                pos.className = 'six-position';
+                pos.id = `pos-${p.num}`;
+                pos.innerHTML = `<strong>Z${p.num}</strong><br><small>${p.nombre}</small><br><span id="pos-${p.num}-player">Vacío</span>`;
+                pos.onclick = () => seleccionarPosicion(p.num);
+                sixesGrid.appendChild(pos);
+            });
+            
+            saqueInicialSet = null;
+            actualizarJugadorasDisponibles();
+            document.getElementById('screen-sexteto').classList.add('active');
+        }
+
+        function seleccionarPosicionSet(pos) {
+            posicionSet = pos;
+            document.getElementById('pos-tomares-arriba').classList.remove('selected');
+            document.getElementById('pos-tomares-abajo').classList.remove('selected');
+            document.getElementById(pos === 'V' ? 'pos-tomares-arriba' : 'pos-tomares-abajo').classList.add('selected');
+        }
+
+        function seleccionarSaqueInicial(equipo) {
+            saqueInicialSet = equipo;
+            document.getElementById('serve-tomares').classList.remove('selected');
+            document.getElementById('serve-rival').classList.remove('selected');
+            document.getElementById(`serve-${equipo === 'T' ? 'tomares' : 'rival'}`).classList.add('selected');
+        }
+
+        function actualizarJugadorasDisponibles() {
+            const container = document.getElementById('available-players');
+            container.innerHTML = '';
+            
+            CONVOCADAS.forEach(j => {
+                const btn = document.createElement('div');
+                btn.className = `bench-player ${LIBEROS.includes(j.d) ? 'libero' : ''}`;
+                btn.innerHTML = `${j.d} - ${j.n}`;
+                btn.onclick = () => asignarJugadora(j.d, j.n);
+                container.appendChild(btn);
+            });
+        }
+
+        let posicionSeleccionada = null;
+
+        function seleccionarPosicion(pos) {
+            posicionSeleccionada = pos;
+            document.querySelectorAll('.six-position').forEach(p => p.classList.remove('selected'));
+            document.getElementById(`pos-${pos}`).classList.add('selected');
+        }
+
+        function asignarJugadora(dorsal, nombre) {
+            if (!posicionSeleccionada) {
+                alert('Selecciona una posición');
+                return;
+            }
+            
+            const existente = SEXTETO_ACTUAL.findIndex(j => j.dorsal === dorsal);
+            if (existente !== -1) {
+                if (!confirm('¿Mover?')) return;
+                SEXTETO_ACTUAL.splice(existente, 1);
+            }
+            
+            SEXTETO_ACTUAL.push({
+                posicion: posicionSeleccionada,
+                dorsal: dorsal,
+                nombre: nombre
+            });
+            
+            actualizarVistaSexteto();
+        }
+
+        function actualizarVistaSexteto() {
+            for (let i = 1; i <= 6; i++) {
+                const jug = SEXTETO_ACTUAL.find(j => j.posicion === i);
+                const span = document.getElementById(`pos-${i}-player`);
+                if (jug) {
+                    span.innerText = `${jug.dorsal} - ${jug.nombre}`;
+                    document.getElementById(`pos-${i}`).classList.add('filled');
+                } else {
+                    span.innerText = 'Vacío';
+                    document.getElementById(`pos-${i}`).classList.remove('filled');
+                }
+            }
+            
+            const disponibles = CONVOCADAS.filter(j => !SEXTETO_ACTUAL.some(s => s.dorsal === j.d));
+            const container = document.getElementById('available-players');
+            container.innerHTML = '';
+            disponibles.forEach(j => {
+                const btn = document.createElement('div');
+                btn.className = `bench-player ${LIBEROS.includes(j.d) ? 'libero' : ''}`;
+                btn.innerHTML = `${j.d} - ${j.n}`;
+                btn.onclick = () => asignarJugadora(j.d, j.n);
+                container.appendChild(btn);
+            });
+        }
+
+        function cancelarSexteto() {
+            if (confirm('¿Volver al partido?')) {
+                document.getElementById('screen-sexteto').classList.remove('active');
+                document.getElementById('screen-partido').style.display = 'flex';
+            }
+        }
+
+        function iniciarSetConSexteto() {
+            if (SEXTETO_ACTUAL.length < 6) {
+                alert('Completa las 6 posiciones');
+                return;
+            }
+            
+            if (!saqueInicialSet) {
+                alert('Selecciona saque inicial');
+                return;
+            }
+            
+            game.tPos = posicionSet;
+            
+            if (game.setActual === 1) {
+                game.equipoArriba = 'R';
+            } else {
+                game.equipoArriba = (game.tPos === 'V') ? 'T' : 'R';
+            }
+            
+            const rotacion = [];
+            for (let i = 1; i <= 6; i++) {
+                const jug = SEXTETO_ACTUAL.find(j => j.posicion === i);
+                if (jug) rotacion.push(jug.dorsal);
+            }
+            
+            game.rotT = rotacion;
+            game.liberos = LIBEROS;
+            game.convocadas = CONVOCADAS;
+            game.banquillo = CONVOCADAS.filter(j => !SEXTETO_ACTUAL.some(s => s.dorsal === j.d));
+            game.server = saqueInicialSet;
+            game.saqueInicial = saqueInicialSet;
+            
+            if (game.rotRPersonalizada.length) {
+                game.rotRInicial = [...game.rotRPersonalizada];
+                game.rotRPersonalizada = [...game.rotRPersonalizada];
+            } else {
+                game.rotRInicial = ['1','2','3','4','5','6'];
+                game.rotRPersonalizada = [];
+            }
+            
+            document.getElementById('screen-sexteto').classList.remove('active');
+            document.getElementById('screen-partido').style.display = 'flex';
+            
+            iniciarSet();
+        }
+
+        // ============================================
+        // FUNCIONES DEL PARTIDO
+        // ============================================
+        function iniciarSet() {
+            if (game.runningSet) return;
+            
+            const ahora = Date.now();
+            
+            if (!game.runningTotal) {
+                game.totalStart = ahora;
+                game.runningTotal = true;
+            }
+            
+            game.setStart = ahora;
+            game.setElapsed = 0;
+            game.runningSet = true;
+            // Reset timeouts para el nuevo set
+            game.timeouts = { T: 0, R: 0 };
+            
+            document.getElementById('btn-set-start').innerHTML = `⏸️ SET ${game.setActual} EN CURSO`;
+            document.getElementById('btn-set-start').classList.add('running');
+            
+            render();
+            guardarPartido();
+        }
+
+        function getPuntosObjetivo() {
+            return game.setActual === 5 ? 15 : 25;
+        }
+
+        function finalizarSet() {
+            const setResultado = {
+                numero: game.setActual,
+                tomares: game.p1,
+                rival: game.p2,
+                duracion: game.setElapsed
+            };
+            setsFinalizados.push(setResultado);
+            game.setsFinalizados = setsFinalizados;
+            
+            if (game.p1 > game.p2) {
+                game.s1++;
+            } else if (game.p2 > game.p1) {
+                game.s2++;
+            }
+            
+            game.p1 = 0;
+            game.p2 = 0;
+            game.setActual++;
+            game.runningSet = false;
+            game.setElapsed = 0;
+            game.cambioCampoSet5 = false;
+            
+            document.getElementById('btn-set-start').innerHTML = `▶️ INICIAR SET ${game.setActual}`;
+            document.getElementById('btn-set-start').classList.remove('running');
+            
+            render();
+            guardarPartido();
+            
+            setTimeout(() => {
+                document.getElementById('nuevo-set-number').innerText = game.setActual;
+                document.getElementById('modal-nuevo-set').classList.add('active');
+            }, 500);
+        }
+
+        function mantenerMismoSexteto() {
+            cerrarModalNuevoSet();
+            
+            game.tPos = game.tPos === 'L' ? 'V' : 'L';
+            game.equipoArriba = game.equipoArriba === 'T' ? 'R' : 'T';
+            
+            if (game.rotRInicial.length) {
+                game.rotRPersonalizada = [...game.rotRInicial];
+            }
+            
+            mostrarSelectorSaqueSet();
+        }
+
+        function cambiarSexteto() {
+            cerrarModalNuevoSet();
+            SEXTETO_ACTUAL = [];
+            
+            if (game.rotRInicial.length) {
+                game.rotRPersonalizada = [...game.rotRInicial];
+            }
+            
+            cargarSexteto(game.setActual);
+        }
+
+        function cerrarModalNuevoSet() {
+            document.getElementById('modal-nuevo-set').classList.remove('active');
+        }
+
+        function mostrarSelectorSaqueSet() {
+            document.getElementById('set-number').innerText = game.setActual;
+            document.getElementById('modal-saque-set').classList.add('active');
+        }
+
+        function setSaqueInicialSet(equipo) {
+            game.server = equipo;
+            game.saqueInicial = equipo;
+            cerrarModalSaque();
+            iniciarSet();
+        }
+
+        function cerrarModalSaque() {
+            document.getElementById('modal-saque-set').classList.remove('active');
+        }
+
+        function actualizarTimers() {
+            if (game.partidoFinalizado) return;
+            
+            const ahora = Date.now();
+            
+            if (!game.paused) {
+                if (game.runningTotal) {
+                    game.totalElapsed = ahora - game.totalStart;
+                }
+                if (game.runningSet) {
+                    game.setElapsed = ahora - game.setStart;
+                }
+            }
+            
+            document.getElementById('time-total').innerText = formatoMs(game.totalElapsed, true);
+            document.getElementById('time-set').innerText = formatoMs(game.setElapsed, false);
+        }
+
+        // ============================================
+        // NUEVA ACCIÓN: RECEPCIÓN
+        // ============================================
+        function iniciarRecepcion() {
+            if (game.paused) {
+                alert('El partido está en pausa. Reanuda para registrar acciones.');
+                return;
+            }
+            
+            pendingAction = 'RECEPCION';
+            pendingTeam = 'T';
+            
+            document.getElementById('modal-recepcion').classList.add('active');
+        }
+
+        function seleccionarValorRecepcion(valor) {
+            pendingRecepcionValor = valor;
+            cerrarModalRecepcion();
+            
+            const grid = document.getElementById('m-grid');
+            document.getElementById('m-title').innerText = 'RECEPCIÓN: ¿QUIÉN?';
+            grid.className = "grid-select";
+            grid.innerHTML = '';
+            
+            const lista = [...new Set([...game.rotT, ...game.liberos])];
+            
+            const btnSinAsignar = document.createElement('button');
+            btnSinAsignar.className = 'btn-opt';
+            btnSinAsignar.innerText = '❓ SIN ASIGNAR';
+            btnSinAsignar.onclick = () => mostrarZonasRecepcion('?');
+            grid.appendChild(btnSinAsignar);
+            
+            lista.forEach(dorsal => {
+                const jug = game.convocadas.find(j => j.d === dorsal);
+                const esLibero = game.liberos.includes(dorsal);
+                const btn = document.createElement('button');
+                btn.className = `btn-opt ${esLibero ? 'libero' : ''}`;
+                btn.innerText = `${dorsal} - ${jug ? jug.n : ''}`;
+                btn.onclick = () => mostrarZonasRecepcion(dorsal);
+                grid.appendChild(btn);
+            });
+            
+            document.getElementById('modal-accion').classList.add('active');
+        }
+
+        function cerrarModalRecepcion() {
+            document.getElementById('modal-recepcion').classList.remove('active');
+        }
+
+        function mostrarZonasRecepcion(dorsal) {
+            const grid = document.getElementById('m-grid');
+            document.getElementById('m-title').innerText = "📍 ZONA DE RECEPCIÓN";
+            grid.className = "court-zones";
+            grid.innerHTML = '';
+            
+            const zonas = (game.tPos === 'L') ? [
+                {num: 1, style: 'grid-column: 3; grid-row: 2;'},
+                {num: 6, style: 'grid-column: 2; grid-row: 2;'},
+                {num: 5, style: 'grid-column: 1; grid-row: 2;'},
+                {num: 2, style: 'grid-column: 3; grid-row: 1;'},
+                {num: 3, style: 'grid-column: 2; grid-row: 1;'},
+                {num: 4, style: 'grid-column: 1; grid-row: 1;'}
+            ] : [
+                {num: 1, style: 'grid-column: 1; grid-row: 2;'},
+                {num: 6, style: 'grid-column: 2; grid-row: 2;'},
+                {num: 5, style: 'grid-column: 3; grid-row: 2;'},
+                {num: 4, style: 'grid-column: 3; grid-row: 1;'},
+                {num: 3, style: 'grid-column: 2; grid-row: 1;'},
+                {num: 2, style: 'grid-column: 1; grid-row: 1;'}
+            ];
+            
+            zonas.forEach(z => {
+                const btn = document.createElement('button');
+                btn.className = 'zone-btn';
+                btn.style.cssText = z.style;
+                btn.innerText = z.num;
+                btn.onclick = () => registrarRecepcion(dorsal, z.num);
+                grid.appendChild(btn);
+            });
+        }
+
+        function registrarRecepcion(dorsal, zona) {
+            const accion = `RECEPCION ${pendingRecepcionValor}`;
+            const equipo = 'T';
+            
+            const snapshot = {
+                p1: game.p1, p2: game.p2,
+                rotT: [...game.rotT],
+                rotR: [...(game.rotRPersonalizada.length ? game.rotRPersonalizada : [])],
+                server: game.server
+            };
+            
+            const nombreJug = dorsal === '?' ? 'SIN ASIGNAR' : (game.convocadas.find(j => j.d === dorsal)?.n || dorsal);
+            
+            if (!game.recepciones) game.recepciones = [];
+            game.recepciones.push({
+                dorsal: dorsal === '?' ? null : dorsal,
+                valor: pendingRecepcionValor,
+                zona: zona,
+                set: game.setActual
+            });
+            
+            game.history.push({
+                set: game.setActual,
+                equipo: 'TOMARES',
+                jugador: nombreJug,
+                dorsal: dorsal === '?' ? '' : dorsal,
+                accion: accion,
+                zona: zona,
+                marcador: `${game.p1}-${game.p2}`,
+                snapshot: snapshot,
+                timestamp: Date.now()
+            });
+            
+            pendingAction = null;
+            pendingTeam = null;
+            pendingRecepcionValor = null;
+            cerrarModalAccion();
+            render();
+            actualizarEstadisticasTiempoReal();
+            guardarPartido();
+        }
+
+        // ============================================
+        // ESTADÍSTICAS EN TIEMPO REAL
+        // ============================================
+        function actualizarEstadisticasTiempoReal() {
+            const puntos = game.history.filter(h => 
+                ['ATAQUE', 'BLOQUEO TOMARES', 'SAQUE DIR', 'FINTA'].includes(h.accion)
+            ).length;
+            document.getElementById('stat-puntos').innerText = puntos;
+            
+            const ataques = game.history.filter(h => h.accion === 'ATAQUE').length;
+            const fallosAtaque = game.history.filter(h => h.accion === 'FALLO ATQ').length;
+            const totalAtaques = ataques + fallosAtaque;
+            const efectividad = totalAtaques > 0 ? Math.round((ataques / totalAtaques) * 100) : 0;
+            document.getElementById('stat-ataque').innerText = efectividad + '%';
+            
+            const bloqueos = game.history.filter(h => h.accion === 'BLOQUEO TOMARES').length;
+            document.getElementById('stat-bloqueos').innerText = bloqueos;
+            
+            if (game.recepciones && game.recepciones.length > 0) {
+                const r3 = game.recepciones.filter(r => r.valor === 3).length;
+                const r2 = game.recepciones.filter(r => r.valor === 2).length;
+                const r1 = game.recepciones.filter(r => r.valor === 1).length;
+                const r0 = game.recepciones.filter(r => r.valor === 0).length;
+                document.getElementById('stat-recepcion').innerText = `${r3}-${r2}-${r1}-${r0}`;
+            } else {
+                document.getElementById('stat-recepcion').innerText = '0-0-0-0';
+            }
+            
+            const puntosPorJugadora = {};
+            game.history.forEach(h => {
+                if (h.equipo === 'TOMARES' && ['ATAQUE', 'BLOQUEO TOMARES', 'SAQUE DIR', 'FINTA'].includes(h.accion)) {
+                    const key = h.dorsal || h.jugador;
+                    puntosPorJugadora[key] = (puntosPorJugadora[key] || 0) + 1;
+                }
+            });
+            
+            let maxPuntos = 0;
+            let maxJugadora = '-';
+            for (let [jug, pts] of Object.entries(puntosPorJugadora)) {
+                if (pts > maxPuntos) {
+                    maxPuntos = pts;
+                    maxJugadora = jug;
+                }
+            }
+            
+            if (maxJugadora !== '-') {
+                document.getElementById('stat-max').innerText = `${maxJugadora} (${maxPuntos})`;
+            } else {
+                document.getElementById('stat-max').innerText = '-';
+            }
+        }
+
+        // ============================================
+        // ESTADÍSTICAS POR JUGADORA
+        // ============================================
+        function verEstadisticasJugadoras() {
+            const stats = {};
+            
+            game.convocadas.forEach(j => {
+                stats[j.d] = {
+                    nombre: j.n,
+                    dorsal: j.d,
+                    ataques: 0,
+                    ataquesExitosos: 0,
+                    bloqueos: 0,
+                    recepciones: [],
+                    puntos: 0
+                };
+            });
+            
+            game.history.forEach(h => {
+                if (h.equipo !== 'TOMARES') return;
+                const dorsal = h.dorsal;
+                if (!dorsal || dorsal === '?') return;
+                if (!stats[dorsal]) return;
+                if (h.accion === 'ATAQUE') { stats[dorsal].ataques++; stats[dorsal].ataquesExitosos++; stats[dorsal].puntos++; }
+                if (h.accion === 'FALLO ATQ') { stats[dorsal].ataques++; }
+                if (h.accion === 'BLOQUEO TOMARES') { stats[dorsal].bloqueos++; stats[dorsal].puntos++; }
+                if (h.accion === 'SAQUE DIR') { stats[dorsal].puntos++; }
+                if (h.accion === 'FINTA') { stats[dorsal].puntos++; }
+            });
+            
+            if (game.recepciones) {
+                game.recepciones.forEach(r => {
+                    if (r.dorsal && stats[r.dorsal]) {
+                        stats[r.dorsal].recepciones.push(r.valor);
+                    }
+                });
+            }
+            
+            const tbody = document.getElementById('stats-body');
+            tbody.innerHTML = '';
+            
+            // Ordenar por puntos descendente
+            const jugadorasConDatos = Object.values(stats).filter(s => 
+                s.puntos > 0 || s.ataques > 0 || s.bloqueos > 0 || s.recepciones.length > 0
+            ).sort((a, b) => b.puntos - a.puntos);
+
+            const sinDatos = Object.values(stats).filter(s => 
+                s.puntos === 0 && s.ataques === 0 && s.bloqueos === 0 && s.recepciones.length === 0
+            );
+
+            [...jugadorasConDatos, ...sinDatos].forEach(s => {
+                const efectividad = s.ataques > 0 ? Math.round((s.ataquesExitosos / s.ataques) * 100) : 0;
+                
+                const r3 = s.recepciones.filter(v => v === 3).length;
+                const r2 = s.recepciones.filter(v => v === 2).length;
+                const r1 = s.recepciones.filter(v => v === 1).length;
+                const r0 = s.recepciones.filter(v => v === 0).length;
+                const totalRec = r3 + r2 + r1 + r0;
+                const mediaRec = totalRec > 0 ? (s.recepciones.reduce((a,v)=>a+v,0)/totalRec).toFixed(1) : '-';
+                
+                // Barras de recepción
+                let recHtml = '-';
+                if (totalRec > 0) {
+                    const maxBar = 80;
+                    recHtml = `
+                        <div style="min-width:90px;">
+                            ${[[3,'#2ecc71'],[2,'#f1c40f'],[1,'#e67e22'],[0,'#e74c3c']].map(([v,color]) => {
+                                const cnt = s.recepciones.filter(x=>x===v).length;
+                                const w = totalRec > 0 ? Math.max(4, Math.round(cnt/totalRec*maxBar)) : 4;
+                                return `<div class="rec-bar">
+                                    <span class="rec-bar-label" style="color:${color}">${v}</span>
+                                    <div class="rec-bar-fill" style="width:${w}px; background:${color};"></div>
+                                    <span class="rec-bar-count">${cnt}</span>
+                                </div>`;
+                            }).join('')}
+                            <div style="font-size:0.65rem; color:#aaa; margin-top:2px;">Media: <strong style="color:#f1c40f">${mediaRec}</strong></div>
+                        </div>`;
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="font-weight:bold; color:${s.puntos > 0 ? '#f1c40f' : '#aaa'}">${s.dorsal}</td>
+                    <td style="text-align:left; padding-left:6px;">${s.nombre}</td>
+                    <td>${s.ataquesExitosos}/${s.ataques}<br><small style="color:#888">${efectividad}%</small></td>
+                    <td>${s.bloqueos}</td>
+                    <td style="padding:4px 2px;">${recHtml}</td>
+                    <td style="font-weight:bold; font-size:1rem; color:#2ecc71">${s.puntos}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('modal-stats').classList.add('active');
+        }
+
+        function cerrarModalStats() {
+            document.getElementById('modal-stats').classList.remove('active');
+        }
+
+        // ============================================
+        // FUNCIONES EXISTENTES
+        // ============================================
+        function iniciarAccion(accion, equipo) {
+            if (game.paused) {
+                alert('El partido está en pausa. Reanuda para registrar acciones.');
+                return;
+            }
+            
+            if (accion === 'UNDO') {
+                deshacer();
+                return;
+            }
+            
+            if (accion === 'RECEPCION') {
+                iniciarRecepcion();
+                return;
+            }
+            
+            if (accion === 'BLOQUEO' && equipo === 'R') {
+                abrirModalBloqueoRival();
+                return;
+            }
+            
+            pendingAction = accion;
+            pendingTeam = equipo;
+            
+            const grid = document.getElementById('m-grid');
+            document.getElementById('m-title').innerText = `${accion}: ¿QUIÉN?`;
+            grid.className = "grid-select";
+            grid.innerHTML = '';
+            
+            if (equipo === 'T') {
+                const lista = [...new Set([...game.rotT, ...game.liberos])];
+                lista.forEach(dorsal => {
+                    const jug = game.convocadas.find(j => j.d === dorsal);
+                    const esLibero = game.liberos.includes(dorsal);
+                    const btn = document.createElement('button');
+                    btn.className = `btn-opt ${esLibero ? 'libero' : ''}`;
+                    btn.innerText = `${dorsal} - ${jug ? jug.n : ''}`;
+                    btn.onclick = () => mostrarZonas(dorsal);
+                    grid.appendChild(btn);
+                });
+            } else {
+                const lista = game.rotRPersonalizada.length ? game.rotRPersonalizada : [];
+                
+                const btnSinAsignar = document.createElement('button');
+                btnSinAsignar.className = 'btn-opt';
+                btnSinAsignar.innerText = '❓ SIN ASIGNAR';
+                btnSinAsignar.onclick = () => mostrarZonas('?');
+                grid.appendChild(btnSinAsignar);
+                
+                lista.forEach(dorsal => {
+                    if (dorsal && dorsal !== '?') {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn-opt';
+                        btn.innerText = dorsal;
+                        btn.onclick = () => mostrarZonas(dorsal);
+                        grid.appendChild(btn);
+                    }
+                });
+            }
+            
+            document.getElementById('modal-accion').classList.add('active');
+        }
+
+        function mostrarZonas(dorsal) {
+            const grid = document.getElementById('m-grid');
+            document.getElementById('m-title').innerText = "📍 ZONA";
+            grid.className = "court-zones";
+            grid.innerHTML = '';
+            
+            const zonas = (game.tPos === 'L') ? [
+                {num: 4, style: 'grid-column: 1; grid-row: 1;'},
+                {num: 3, style: 'grid-column: 2; grid-row: 1;'},
+                {num: 2, style: 'grid-column: 3; grid-row: 1;'},
+                {num: 5, style: 'grid-column: 1; grid-row: 2;'},
+                {num: 6, style: 'grid-column: 2; grid-row: 2;'},
+                {num: 1, style: 'grid-column: 3; grid-row: 2;'}
+            ] : [
+                {num: 2, style: 'grid-column: 1; grid-row: 1;'},
+                {num: 3, style: 'grid-column: 2; grid-row: 1;'},
+                {num: 4, style: 'grid-column: 3; grid-row: 1;'},
+                {num: 1, style: 'grid-column: 1; grid-row: 2;'},
+                {num: 6, style: 'grid-column: 2; grid-row: 2;'},
+                {num: 5, style: 'grid-column: 3; grid-row: 2;'}
+            ];
+            
+            zonas.forEach(z => {
+                const btn = document.createElement('button');
+                btn.className = 'zone-btn';
+                btn.style.cssText = z.style;
+                btn.innerText = z.num;
+                btn.onclick = () => registrarAccion(dorsal, z.num);
+                grid.appendChild(btn);
+            });
+            
+            document.getElementById('modal-accion').classList.add('active');
+        }
+
+        function registrarAccion(dorsal, zona) {
+            let accion = pendingAction;
+            let equipo = pendingTeam;
+            
+            if (accion === 'BLOQUEO' && equipo === 'R') {
+                dorsal = pendingBloqueoDorsal;
+            }
+            
+            const snapshot = {
+                p1: game.p1, p2: game.p2,
+                rotT: [...game.rotT],
+                rotR: [...(game.rotRPersonalizada.length ? game.rotRPersonalizada : [])],
+                server: game.server
+            };
+            
+            const esPunto = ["ATAQUE", "BLOQUEO", "SAQUE DIR", "FINTA"].includes(accion);
+            const ganador = (equipo === 'T') ? (esPunto ? 'T' : 'R') : (esPunto ? 'R' : 'T');
+            
+            if (ganador !== game.server) {
+                if (ganador === 'T') {
+                    game.rotT.push(game.rotT.shift());
+                } else if (game.rotRPersonalizada.length) {
+                    game.rotRPersonalizada.push(game.rotRPersonalizada.shift());
+                }
+                game.server = ganador;
+            }
+            
+            if (ganador === 'T') {
+                game.p1++;
+            } else {
+                game.p2++;
+            }
+            
+            let nombreJug = '';
+            let accionTexto = accion;
+            
+            if (equipo === 'T') {
+                nombreJug = game.convocadas.find(j => j.d === dorsal)?.n || dorsal;
+                if (accion === 'BLOQUEO') accionTexto = 'BLOQUEO TOMARES';
+            } else {
+                if (accion === 'BLOQUEO') {
+                    const jugTomares = game.convocadas.find(j => j.d === dorsal);
+                    nombreJug = dorsal === '?' ? 'SIN ASIGNAR' : (jugTomares ? `${dorsal} ${jugTomares.n}` : dorsal);
+                    accionTexto = 'BLOQUEO RIVAL';
+                } else {
+                    nombreJug = dorsal === '?' ? 'SIN ASIGNAR' : dorsal;
+                }
+            }
+            
+            if (accion.includes('FALLA')) {
+                accionTexto = accion.replace('FALLA', 'FALLO');
+            }
+            
+            game.history.push({
+                set: game.setActual,
+                equipo: equipo === 'T' ? 'TOMARES' : game.rName,
+                jugador: nombreJug,
+                dorsal: dorsal === '?' ? '' : dorsal,
+                accion: accionTexto,
+                zona: zona,
+                marcador: `${game.p1}-${game.p2}`,
+                snapshot: snapshot,
+                timestamp: Date.now()
+            });
+            
+            pendingAction = null;
+            pendingTeam = null;
+            pendingBloqueoDorsal = null;
+            cerrarModalAccion();
+            render();
+            actualizarEstadisticasTiempoReal();
+            guardarPartido();
+            
+            if (game.setActual === 5 && !game.cambioCampoSet5) {
+                if (game.p1 === 8 || game.p2 === 8) {
+                    game.cambioCampoSet5 = true;
+                    game.tPos = game.tPos === 'L' ? 'V' : 'L';
+                    game.equipoArriba = game.equipoArriba === 'T' ? 'R' : 'T';
+                    render();
+                    guardarPartido();
+                }
+            }
+            
+            const puntosObjetivo = getPuntosObjetivo();
+            if (game.p1 >= puntosObjetivo || game.p2 >= puntosObjetivo) {
+                if (Math.abs(game.p1 - game.p2) >= 2) {
+                    setTimeout(() => {
+                        if (confirm(`¿Finalizar set?`)) finalizarSet();
+                    }, 100);
+                }
+            }
+        }
+
+        function deshacer() {
+            if (game.history.length === 0) return;
+            
+            const ultimo = game.history.pop();
+            game.p1 = ultimo.snapshot.p1;
+            game.p2 = ultimo.snapshot.p2;
+            game.rotT = ultimo.snapshot.rotT;
+            if (ultimo.snapshot.rotR.length) game.rotRPersonalizada = ultimo.snapshot.rotR;
+            game.server = ultimo.snapshot.server;
+            
+            render();
+            actualizarEstadisticasTiempoReal();
+            guardarPartido();
+        }
+
+        function render() {
+            document.getElementById('name1').innerText = 'TOMARES';
+            document.getElementById('name2').innerText = game.rName;
+            
+            document.getElementById('pts1').innerText = game.p1;
+            document.getElementById('pts2').innerText = game.p2;
+            
+            document.getElementById('set1').innerText = `Sets: ${game.s1}`;
+            document.getElementById('set2').innerText = `Sets: ${game.s2}`;
+            
+            document.getElementById('pos-indicator').innerText = game.tPos === 'L' ? '⬇️' : '⬆️';
+            document.getElementById('serve-indicator').innerText = game.runningSet ? `🎯 ${game.server === 'T' ? 'T' : 'R'}` : '';
+            
+            const acciones = ["Ataque", "Bloqueo", "Saque Dir", "Finta", "Fallo Atq", "Fallo Saq", "Fallo Rec", "Recepcion", "Undo"];
+            
+            function dibujarBotones(containerId, equipo) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                
+                acciones.forEach(acc => {
+                    let claseBtn = 'btn';
+                    if (acc === 'Undo') {
+                        claseBtn += ' btn-undo';
+                    } else if (acc === 'Recepcion') {
+                        claseBtn += ' btn-recepcion';
+                    } else {
+                        claseBtn += equipo === 'T' ? ' btn-tomares' : ' btn-rival';
+                    }
+                    
+                    const btn = document.createElement('button');
+                    btn.className = claseBtn;
+                    btn.innerText = acc.toUpperCase();
+                    
+                    if (acc === 'Undo') {
+                        btn.onclick = deshacer;
+                    } else if (acc === 'Recepcion' && equipo === 'T') {
+                        btn.onclick = iniciarRecepcion;
+                    } else if (acc === 'Recepcion' && equipo === 'R') {
+                        btn.style.display = 'none';
+                    } else {
+                        btn.onclick = () => iniciarAccion(acc.toUpperCase(), equipo);
+                    }
+                    
+                    container.appendChild(btn);
+                });
+            }
+            
+            dibujarBotones('btns-t', 'T');
+            dibujarBotones('btns-r', 'R');
+            
+            const topSide = document.getElementById('top-side');
+            const botSide = document.getElementById('bot-side');
+            topSide.innerHTML = '';
+            botSide.innerHTML = '';
+            
+            function dibujarJugadores(container, rotacion, esTomares) {
+                let ordenVisual;
+                
+                if (esTomares) {
+                    if (game.tPos === 'L') {
+                        ordenVisual = [
+                            {indice: 3, zona: 4},
+                            {indice: 2, zona: 3},
+                            {indice: 1, zona: 2},
+                            {indice: 4, zona: 5},
+                            {indice: 5, zona: 6},
+                            {indice: 0, zona: 1}
+                        ];
+                    } else {
+                        ordenVisual = [
+                            {indice: 0, zona: 1},
+                            {indice: 5, zona: 6},
+                            {indice: 4, zona: 5},
+                            {indice: 1, zona: 2},
+                            {indice: 2, zona: 3},
+                            {indice: 3, zona: 4}
+                        ];
+                    }
+                } else {
+                    if (game.tPos === 'L') {
+                        ordenVisual = [
+                            {indice: 0, zona: 1},
+                            {indice: 5, zona: 6},
+                            {indice: 4, zona: 5},
+                            {indice: 1, zona: 2},
+                            {indice: 2, zona: 3},
+                            {indice: 3, zona: 4}
+                        ];
+                    } else {
+                        ordenVisual = [
+                            {indice: 3, zona: 4},
+                            {indice: 2, zona: 3},
+                            {indice: 1, zona: 2},
+                            {indice: 4, zona: 5},
+                            {indice: 5, zona: 6},
+                            {indice: 0, zona: 1}
+                        ];
+                    }
+                }
+                
+                ordenVisual.forEach(item => {
+                    const dorsal = rotacion[item.indice];
+                    if (!dorsal) return;
+                    
+                    const player = document.createElement('div');
+                    player.className = 'player';
+                    
+                    if (esTomares) {
+                        if (game.liberos.includes(dorsal)) player.classList.add('libero');
+                        else player.style.background = 'var(--color-tomares)';
+                    } else {
+                        player.style.background = 'var(--color-rival)';
+                    }
+                    
+                    if ((esTomares && game.server === 'T') || (!esTomares && game.server === 'R')) {
+                        if (item.indice === 0) player.classList.add('serving');
+                    }
+                    
+                    player.innerText = dorsal;
+                    player.title = `Zona ${item.zona}`;
+                    player.onclick = () => { if (esTomares) iniciarAccion('ATAQUE', 'T'); };
+                    
+                    container.appendChild(player);
+                });
+            }
+            
+            if (game.equipoArriba === 'T') {
+                dibujarJugadores(topSide, game.rotT, true);
+                dibujarJugadores(botSide, game.rotRPersonalizada.length ? game.rotRPersonalizada : ['1','2','3','4','5','6'], false);
+            } else {
+                dibujarJugadores(topSide, game.rotRPersonalizada.length ? game.rotRPersonalizada : ['1','2','3','4','5','6'], false);
+                dibujarJugadores(botSide, game.rotT, true);
+            }
+            
+            const setsRecientes = setsFinalizados.slice(-2).map(s => 
+                `Set ${s.numero}: ${s.tomares}-${s.rival} (${formatoMs(s.duracion, false)})`
+            ).join(' • ');
+            
+            document.getElementById('log').innerHTML = 
+                (setsRecientes ? `<div>📊 ${setsRecientes}</div>` : '') +
+                game.history.slice(-2).reverse().map(h => 
+                    `<div>⚡ ${h.accion} ${h.jugador} [${h.marcador}]</div>`
+                ).join('');
+        }
+
+        function ajustePuntos(lado, valor) {
+            if (lado === 1) game.p1 = Math.max(0, game.p1 + valor);
+            else game.p2 = Math.max(0, game.p2 + valor);
+            render();
+            guardarPartido();
+        }
+
+        function confirmarFinalizarSet() {
+            if (confirm('¿Finalizar set?')) finalizarSet();
+        }
+
+        function abrirResumenFinal() {
+            if (confirm('¿Finalizar partido?')) {
+                game.partidoFinalizado = true;
+                game.runningSet = false;
+                game.runningTotal = false;
+                
+                document.getElementById('resumen-match-title').value = game.mTitle;
+                document.getElementById('resumen-rival-name').value = game.rName;
+                
+                document.getElementById('resumen-resultado').innerText = `${game.s1}-${game.s2}`;
+                document.getElementById('resumen-tiempo').innerText = formatoMs(game.totalElapsed, true);
+                
+                const totalPuntos = game.history.filter(h => 
+                    ['ATAQUE', 'BLOQUEO TOMARES', 'BLOQUEO RIVAL', 'SAQUE DIR', 'FINTA', 'FALLO ATQ', 'FALLO SAQ', 'FALLO REC'].includes(h.accion)
+                ).length;
+                document.getElementById('resumen-puntos').innerText = totalPuntos;
+                
+                const listaSets = document.getElementById('resumen-sets-lista');
+                listaSets.innerHTML = '';
+                
+                setsFinalizados.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'set-resumen';
+                    div.innerHTML = `
+                        <span>Set ${s.numero}</span>
+                        <span>${s.tomares}-${s.rival}</span>
+                        <span>${formatoMs(s.duracion, false)}</span>
+                    `;
+                    listaSets.appendChild(div);
+                });
+                
+                document.getElementById('modal-resumen').classList.add('active');
+            }
+        }
+
+        function cerrarResumen() {
+            document.getElementById('modal-resumen').classList.remove('active');
+        }
+
+        function volverAlInicio() {
+            if (confirm('¿Volver al inicio? Se perderán los datos no exportados.')) {
+                localStorage.removeItem('voleyGame');
+                
+                PLANTILLA_COMPLETA = [];
+                FILIALES = [];
+                CONVOCADAS = [];
+                LIBEROS = [];
+                SEXTETO_ACTUAL = [];
+                setsFinalizados = [];
+                
+                game = {
+                    mTitle: 'Temporada 2024: Tomares vs Rival',
+                    tPos: 'L',
+                    equipoArriba: 'R',
+                    rName: 'RIVAL',
+                    p1: 0, p2: 0,
+                    s1: 0, s2: 0,
+                    setActual: 1,
+                    rotT: [],
+                    rotRPersonalizada: [],
+                    rotRInicial: [],
+                    liberos: [],
+                    server: 'T',
+                    saqueInicial: 'T',
+                    history: [],
+                    recepciones: [],
+                    totalStart: 0,
+                    totalElapsed: 0,
+                    setStart: 0,
+                    setElapsed: 0,
+                    runningTotal: false,
+                    runningSet: false,
+                    paused: false,
+                    convocadas: [],
+                    banquillo: [],
+                    partidoFinalizado: false,
+                    cambioCampoSet5: false,
+                    setsFinalizados: []
+                };
+                
+                document.getElementById('screen-partido').style.display = 'none';
+                document.getElementById('modal-resumen').classList.remove('active');
+                document.getElementById('screen-plantilla').classList.remove('active');
+                document.getElementById('screen-convocatoria').classList.remove('active');
+                document.getElementById('screen-sexteto').classList.remove('active');
+                document.getElementById('modal-accion').classList.remove('active');
+                document.getElementById('modal-cambios').classList.remove('active');
+                document.getElementById('modal-historial').classList.remove('active');
+                document.getElementById('modal-bloqueo-rival').classList.remove('active');
+                document.getElementById('modal-saque-set').classList.remove('active');
+                document.getElementById('modal-nuevo-set').classList.remove('active');
+                document.getElementById('modal-rival').classList.remove('active');
+                document.getElementById('modal-recepcion').classList.remove('active');
+                document.getElementById('modal-stats').classList.remove('active');
+                
+                document.getElementById('screen-config-inicial').classList.add('active');
+                
+                initPlantilla();
+            }
+        }
+
+        function configurarRival() {
+            document.getElementById('rival-z1').value = game.rotRPersonalizada[0] || '';
+            document.getElementById('rival-z2').value = game.rotRPersonalizada[1] || '';
+            document.getElementById('rival-z3').value = game.rotRPersonalizada[2] || '';
+            document.getElementById('rival-z4').value = game.rotRPersonalizada[3] || '';
+            document.getElementById('rival-z5').value = game.rotRPersonalizada[4] || '';
+            document.getElementById('rival-z6').value = game.rotRPersonalizada[5] || '';
+            document.getElementById('modal-rival').classList.add('active');
+        }
+
+        function guardarConfigRival() {
+            const dorsales = [
+                document.getElementById('rival-z1').value.trim(),
+                document.getElementById('rival-z2').value.trim(),
+                document.getElementById('rival-z3').value.trim(),
+                document.getElementById('rival-z4').value.trim(),
+                document.getElementById('rival-z5').value.trim(),
+                document.getElementById('rival-z6').value.trim()
+            ];
+            
+            if (dorsales.some(d => d)) {
+                game.rotRPersonalizada = dorsales.map(d => d || '?');
+                game.rotRInicial = [...game.rotRPersonalizada];
+            } else {
+                game.rotRPersonalizada = [];
+                game.rotRInicial = [];
+            }
+            
+            cerrarModalRival();
+            render();
+            guardarPartido();
+        }
+
+        function cerrarModalRival() {
+            document.getElementById('modal-rival').classList.remove('active');
+        }
+
+        // ============================================
+        // CAMBIOS
+        // ============================================
+        let jugadorSeleccionadoCambio = null;
+
+        function abrirCambios(equipo) {
+            if (game.paused) {
+                alert('El partido está en pausa. Reanuda para hacer cambios.');
+                return;
+            }
+            
+            if (equipo !== 'T') {
+                alert('Solo cambios en Tomares');
+                return;
+            }
+            
+            jugadorSeleccionadoCambio = null;
+            
+            const cambiosActuales = (game.cambiosPorSet && game.cambiosPorSet[game.setActual]) || 0;
+            const countEl = document.getElementById('cambios-set-count');
+            countEl.innerText = `${cambiosActuales}/6`;
+            countEl.style.color = cambiosActuales >= 6 ? '#e74c3c' : cambiosActuales >= 4 ? '#f39c12' : '#f1c40f';
+            
+            const onCourt = document.getElementById('on-court-players');
+            const bench = document.getElementById('bench-players');
+            onCourt.innerHTML = '';
+            bench.innerHTML = '';
+            
+            game.rotT.forEach(dorsal => {
+                const jug = game.convocadas.find(j => j.d === dorsal);
+                if (jug) {
+                    const btn = document.createElement('div');
+                    btn.className = `bench-player ${game.liberos.includes(dorsal) ? 'libero' : ''}`;
+                    btn.id = `cambio-cancha-${dorsal}`;
+                    btn.innerHTML = `${dorsal} - ${jug.n}`;
+                    btn.onclick = () => seleccionarJugadorCancha(dorsal, btn);
+                    onCourt.appendChild(btn);
+                }
+            });
+            
+            game.banquillo.forEach(j => {
+                const btn = document.createElement('div');
+                btn.className = `bench-player ${game.liberos.includes(j.d) ? 'libero' : ''}`;
+                btn.id = `cambio-banquillo-${j.d}`;
+                btn.innerHTML = `${j.d} - ${j.n}`;
+                btn.onclick = () => realizarCambio(j.d, btn);
+                bench.appendChild(btn);
+            });
+            
+            document.getElementById('modal-cambios').classList.add('active');
+        }
+
+        function seleccionarJugadorCancha(dorsal, elemento) {
+            if (jugadorSeleccionadoCambio) {
+                const anterior = document.getElementById(`cambio-cancha-${jugadorSeleccionadoCambio}`);
+                if (anterior) anterior.classList.remove('selected-for-change');
+            }
+            
+            jugadorSeleccionadoCambio = dorsal;
+            elemento.classList.add('selected-for-change');
+        }
+
+        function realizarCambio(dorsalEntra, elementoEntra) {
+            if (!jugadorSeleccionadoCambio) {
+                alert('Primero selecciona quién sale');
+                return;
+            }
+
+            // Límite reglamentario: 6 cambios por set
+            if (!game.cambiosPorSet) game.cambiosPorSet = {};
+            const cambiosActuales = game.cambiosPorSet[game.setActual] || 0;
+            if (cambiosActuales >= 6) {
+                alert('⛔ Límite de 6 cambios por set alcanzado (reglamento FIVB)');
+                return;
+            }
+            
+            const sale = jugadorSeleccionadoCambio;
+            const entra = dorsalEntra;
+            
+            const jugSale = game.convocadas.find(j => j.d === sale);
+            const jugEntra = game.convocadas.find(j => j.d === entra);
+            
+            const index = game.rotT.indexOf(sale);
+            if (index !== -1) {
+                game.rotT[index] = entra;
+            }
+            
+            game.banquillo = game.banquillo.filter(j => j.d !== entra);
+            if (jugSale) {
+                game.banquillo.push(jugSale);
+            }
+            
+            game.history.push({
+                set: game.setActual,
+                equipo: 'TOMARES',
+                jugador: `${sale} ${jugSale?.n || ''} → ${entra} ${jugEntra?.n || ''}`,
+                accion: 'CAMBIO',
+                marcador: `${game.p1}-${game.p2}`
+            });
+
+            // Registrar el cambio en el contador del set
+            if (!game.cambiosPorSet) game.cambiosPorSet = {};
+            game.cambiosPorSet[game.setActual] = (game.cambiosPorSet[game.setActual] || 0) + 1;
+            
+            cerrarModalCambios();
+            render();
+            guardarPartido();
+        }
+
+        function cerrarModalCambios() {
+            document.getElementById('modal-cambios').classList.remove('active');
+            jugadorSeleccionadoCambio = null;
+        }
+
+        function abrirModalBloqueoRival() {
+            if (game.paused) {
+                alert('El partido está en pausa. Reanuda para registrar acciones.');
+                return;
+            }
+            
+            pendingAction = 'BLOQUEO';
+            pendingTeam = 'R';
+            
+            const container = document.getElementById('bloqueo-jugadoras');
+            container.innerHTML = '';
+            
+            const btnSinAsignar = document.createElement('div');
+            btnSinAsignar.className = 'bench-player';
+            btnSinAsignar.innerHTML = '❓ SIN ASIGNAR';
+            btnSinAsignar.onclick = () => {
+                pendingBloqueoDorsal = '?';
+                mostrarZonas('?');
+                cerrarModalBloqueo();
+            };
+            container.appendChild(btnSinAsignar);
+            
+            game.rotT.forEach(dorsal => {
+                const jug = game.convocadas.find(j => j.d === dorsal);
+                if (jug) {
+                    const btn = document.createElement('div');
+                    btn.className = `bench-player ${game.liberos.includes(dorsal) ? 'libero' : ''}`;
+                    btn.innerHTML = `${dorsal} - ${jug.n}`;
+                    btn.onclick = () => {
+                        pendingBloqueoDorsal = dorsal;
+                        mostrarZonas(dorsal);
+                        cerrarModalBloqueo();
+                    };
+                    container.appendChild(btn);
+                }
+            });
+            
+            document.getElementById('modal-bloqueo-rival').classList.add('active');
+        }
+
+        function cerrarModalBloqueo() {
+            document.getElementById('modal-bloqueo-rival').classList.remove('active');
+        }
+
+        let historialFiltroSet = 0; // 0 = todos
+
+        function verHistorialCompleto() {
+            historialFiltroSet = game.setActual;
+            renderHistorial();
+            document.getElementById('modal-historial').classList.add('active');
+        }
+
+        function renderHistorial() {
+            // Filtros por set
+            const filtrosContainer = document.getElementById('historial-filtros');
+            filtrosContainer.innerHTML = '';
+            const setsDisponibles = [0, ...new Set(game.history.map(h => h.set))].sort((a,b)=>a-b);
+            setsDisponibles.forEach(s => {
+                const btn = document.createElement('button');
+                btn.style.cssText = `padding:4px 12px; border-radius:20px; border:none; cursor:pointer; font-size:0.75rem; font-weight:bold; background:${historialFiltroSet === s ? '#f1c40f' : '#333'}; color:${historialFiltroSet === s ? '#000' : '#fff'};`;
+                btn.innerText = s === 0 ? 'TODOS' : `Set ${s}`;
+                btn.onclick = () => { historialFiltroSet = s; renderHistorial(); };
+                filtrosContainer.appendChild(btn);
+            });
+
+            const container = document.getElementById('full-history');
+            container.innerHTML = '';
+
+            // Sets finalizados relevantes
+            setsFinalizados
+                .filter(s => historialFiltroSet === 0 || s.numero === historialFiltroSet)
+                .forEach(s => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'padding:8px; border-bottom:1px solid #333; font-size:0.8rem; color:#f1c40f;';
+                    div.innerHTML = `📊 SET ${s.numero} FINALIZADO: ${s.tomares}-${s.rival} (${formatoMs(s.duracion, false)})`;
+                    container.appendChild(div);
+                });
+
+            // Acciones agrupadas
+            const histFiltrado = game.history
+                .filter(h => historialFiltroSet === 0 || h.set === historialFiltroSet)
+                .slice().reverse();
+
+            let setAnterior = null;
+            histFiltrado.forEach(h => {
+                // Separador de set
+                if (historialFiltroSet === 0 && h.set !== setAnterior) {
+                    setAnterior = h.set;
+                    const sep = document.createElement('div');
+                    sep.style.cssText = 'padding:5px 8px; font-size:0.7rem; color:#888; background:#111; margin:4px 0; border-radius:4px; text-transform:uppercase;';
+                    sep.innerText = `── Set ${h.set} ──`;
+                    container.appendChild(sep);
+                }
+
+                const esError = ['FALLO ATQ','FALLO SAQ','FALLO REC','BLOQUEO RIVAL'].includes(h.accion);
+                const esPunto = ['ATAQUE','BLOQUEO TOMARES','SAQUE DIR','FINTA'].includes(h.accion);
+                const esCambio = h.accion === 'CAMBIO';
+                const esTM = h.accion === 'TIEMPO MUERTO';
+
+                let color = '#aaa';
+                let icon = '·';
+                if (esPunto) { color = '#2ecc71'; icon = '✅'; }
+                else if (esError) { color = '#e74c3c'; icon = '❌'; }
+                else if (esCambio) { color = '#9b59b6'; icon = '🔄'; }
+                else if (esTM) { color = '#e67e22'; icon = '⏰'; }
+
+                const div = document.createElement('div');
+                div.style.cssText = `padding:6px 8px; border-bottom:1px solid #222; font-size:0.78rem; color:${color};`;
+                div.innerHTML = `${icon} <strong>${h.equipo||''}</strong> ${h.jugador||''} <em>${h.accion||''}</em> ${h.zona ? 'Z'+h.zona : ''} <span style="color:#555; float:right">[${h.marcador||''}]</span>`;
+                container.appendChild(div);
+            });
+
+            if (container.children.length === 0) {
+                container.innerHTML = '<div style="color:#555; text-align:center; padding:20px;">Sin acciones registradas</div>';
+            }
+        }
+
+        function cerrarModalHistorial() {
+            document.getElementById('modal-historial').classList.remove('active');
+        }
+
+        function cerrarModalAccion() {
+            document.getElementById('modal-accion').classList.remove('active');
+            pendingAction = null;
+            pendingTeam = null;
+        }
+
+        // ============================================
+        // GESTIÓN RÁPIDA
+        // ============================================
+        function abrirGestionRapida() {
+            const cambiosSet = (game.cambiosPorSet && game.cambiosPorSet[game.setActual]) || 0;
+            document.getElementById('gestion-cambios-count').innerText = `${cambiosSet}/6`;
+            const dotsContainer = document.getElementById('gestion-cambios-dots');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'cambio-dot' + (i < cambiosSet ? (cambiosSet >= 6 ? ' maximo' : ' usado') : '');
+                dotsContainer.appendChild(dot);
+            }
+            const tmT = (game.timeouts && game.timeouts.T) || 0;
+            const tmR = (game.timeouts && game.timeouts.R) || 0;
+            renderTimeoutDots('timeouts-tomares', tmT);
+            renderTimeoutDots('timeouts-rival', tmR);
+            const statsSet = calcularStatsSet(game.setActual);
+            document.getElementById('gestion-stats-set').innerHTML = `
+                <div>⚡ Puntos Tomares: <strong style="color:#2ecc71">${statsSet.puntosT}</strong> · Rival: <strong style="color:var(--color-rival)">${statsSet.puntosR}</strong></div>
+                <div>🏐 Ataques: ${statsSet.ataques}/${statsSet.totalAtaques} (${statsSet.efectAtaque}%)</div>
+                <div>🛡️ Bloqueos Tomares: ${statsSet.bloqueos}</div>
+                <div>📥 Recepciones: ${statsSet.totalRec} · Media: ${statsSet.mediaRec}</div>
+                <div>❌ Errores: ATQ ${statsSet.errAtq} · SAQ ${statsSet.errSaq} · REC ${statsSet.errRec}</div>
+            `;
+            const rotContainer = document.getElementById('gestion-rotacion');
+            rotContainer.innerHTML = '';
+            game.rotT.forEach((dorsal, idx) => {
+                const jug = game.convocadas.find(j => j.d === dorsal);
+                const esLibero = game.liberos.includes(dorsal);
+                const esSacador = (idx === 0);
+                const pill = document.createElement('div');
+                pill.style.cssText = `background:${esLibero ? 'var(--libero)' : 'var(--color-tomares)'}; color:${esLibero ? '#000' : '#fff'}; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:bold; border:2px solid ${esSacador ? '#f1c40f' : 'transparent'};`;
+                pill.innerHTML = `Z${idx+1}: ${dorsal}${jug ? ' '+jug.n.split(' ')[0] : ''}${esSacador ? ' 🏐' : ''}`;
+                rotContainer.appendChild(pill);
+            });
+            // Último punto
+            const ultimoEl = document.getElementById('gestion-ultimo-punto');
+            if (game.history.length > 0) {
+                const ult = game.history[game.history.length - 1];
+                ultimoEl.innerHTML = `<span style="color:#f1c40f">${ult.accion}</span> · ${ult.jugador || '-'} · Z${ult.zona || '-'} · [${ult.marcador}]`;
+            } else {
+                ultimoEl.innerText = 'Sin acciones registradas';
+            }
+
+            document.getElementById('modal-gestion').classList.add('active');
+        }
+
+        function renderTimeoutDots(containerId, usado) {
+            const c = document.getElementById(containerId);
+            c.innerHTML = '';
+            for (let i = 0; i < 2; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'timeout-dot' + (i < usado ? ' usado' : '');
+                c.appendChild(dot);
+            }
+        }
+
+        function usarTimeout(equipo) {
+            if (!game.timeouts) game.timeouts = { T: 0, R: 0 };
+            if (game.timeouts[equipo] >= 2) { alert('Ya se usaron los 2 tiempos muertos'); return; }
+            game.timeouts[equipo]++;
+            game.history.push({
+                set: game.setActual, equipo: equipo === 'T' ? 'TOMARES' : game.rName,
+                jugador: '', dorsal: '', accion: 'TIEMPO MUERTO', zona: '',
+                marcador: `${game.p1}-${game.p2}`,
+                snapshot: { p1: game.p1, p2: game.p2, rotT: [...game.rotT], rotR: [...(game.rotRPersonalizada.length ? game.rotRPersonalizada : [])], server: game.server },
+                timestamp: Date.now()
+            });
+            guardarPartido();
+            abrirGestionRapida();
+        }
+
+        function calcularStatsSet(numSet) {
+            const h = game.history.filter(e => e.set === numSet);
+            const puntosT = h.filter(e => ['ATAQUE','BLOQUEO TOMARES','SAQUE DIR','FINTA'].includes(e.accion)).length;
+            const puntosR = h.filter(e => ['BLOQUEO RIVAL','FALLO ATQ','FALLO SAQ','FALLO REC'].includes(e.accion)).length;
+            const ataques = h.filter(e => e.accion === 'ATAQUE').length;
+            const totalAtaques = ataques + h.filter(e => e.accion === 'FALLO ATQ').length;
+            const efectAtaque = totalAtaques > 0 ? Math.round(ataques / totalAtaques * 100) : 0;
+            const bloqueos = h.filter(e => e.accion === 'BLOQUEO TOMARES').length;
+            const recs = (game.recepciones || []).filter(r => r.set === numSet);
+            const totalRec = recs.length;
+            const mediaRec = totalRec > 0 ? (recs.reduce((a, r) => a + r.valor, 0) / totalRec).toFixed(1) : '-';
+            const errAtq = h.filter(e => e.accion === 'FALLO ATQ').length;
+            const errSaq = h.filter(e => e.accion === 'FALLO SAQ').length;
+            const errRec = h.filter(e => e.accion === 'FALLO REC').length;
+            return { puntosT, puntosR, ataques, totalAtaques, efectAtaque, bloqueos, totalRec, mediaRec, errAtq, errSaq, errRec };
+        }
+
+        function cerrarModalGestion() {
+            document.getElementById('modal-gestion').classList.remove('active');
+        }
+
+        // ============================================
+        // MODIFICAR ÚLTIMO PUNTO
+        // ============================================
+        let mpEquipoSeleccionado = 'T';
+        let mpZonaSeleccionada = null;
+
+        function abrirModificarUltimoPunto() {
+            if (game.history.length === 0) { alert('No hay acciones registradas'); return; }
+            cerrarModalGestion();
+
+            const ult = game.history[game.history.length - 1];
+
+            // Info del punto actual
+            document.getElementById('modificar-punto-info').innerHTML =
+                `<b>Actual:</b> ${ult.accion} · ${ult.jugador || '-'} · Z${ult.zona || '-'} · [${ult.marcador}]`;
+
+            // Preseleccionar acción
+            const sel = document.getElementById('mp-accion');
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === ult.accion) { sel.selectedIndex = i; break; }
+            }
+
+            // Preseleccionar equipo
+            mpEquipoSeleccionado = ult.equipo === 'TOMARES' ? 'T' : 'R';
+            seleccionarEquipoMP(mpEquipoSeleccionado);
+
+            // Preseleccionar zona
+            mpZonaSeleccionada = ult.zona || null;
+            renderZonasMP();
+
+            document.getElementById('modal-modificar-punto').classList.add('active');
+        }
+
+        function seleccionarEquipoMP(equipo) {
+            mpEquipoSeleccionado = equipo;
+            document.getElementById('mp-equipo-T').style.borderColor = equipo === 'T' ? '#2ecc71' : '#333';
+            document.getElementById('mp-equipo-T').style.background  = equipo === 'T' ? '#0d3a6e' : '#1a1a1a';
+            document.getElementById('mp-equipo-T').style.color       = equipo === 'T' ? 'white' : '#888';
+            document.getElementById('mp-equipo-R').style.borderColor = equipo === 'R' ? '#27ae60' : '#333';
+            document.getElementById('mp-equipo-R').style.background  = equipo === 'R' ? '#1a3a1a' : '#1a1a1a';
+            document.getElementById('mp-equipo-R').style.color       = equipo === 'R' ? 'white' : '#888';
+
+            // Rellenar jugadoras
+            const sel = document.getElementById('mp-jugadora');
+            sel.innerHTML = '';
+            const ult = game.history[game.history.length - 1];
+
+            if (equipo === 'T') {
+                const opc = document.createElement('option');
+                opc.value = '?'; opc.innerText = '❓ SIN ASIGNAR';
+                sel.appendChild(opc);
+                [...new Set([...game.rotT, ...game.liberos])].forEach(dorsal => {
+                    const jug = game.convocadas.find(j => j.d === dorsal);
+                    const o = document.createElement('option');
+                    o.value = dorsal;
+                    o.innerText = `${dorsal} - ${jug ? jug.n : ''}`;
+                    if (ult.dorsal === dorsal) o.selected = true;
+                    sel.appendChild(o);
+                });
+            } else {
+                const opc = document.createElement('option');
+                opc.value = '?'; opc.innerText = '❓ SIN ASIGNAR'; opc.selected = true;
+                sel.appendChild(opc);
+                (game.rotRPersonalizada.length ? game.rotRPersonalizada : []).forEach(dorsal => {
+                    if (!dorsal || dorsal === '?') return;
+                    const o = document.createElement('option');
+                    o.value = dorsal; o.innerText = dorsal;
+                    sel.appendChild(o);
+                });
+            }
+        }
+
+        function renderZonasMP() {
+            const grid = document.getElementById('mp-zonas');
+            grid.innerHTML = '';
+            const zonas = (game.tPos === 'L') ? [4,3,2,5,6,1] : [2,3,4,1,6,5];
+            zonas.forEach(n => {
+                const btn = document.createElement('button');
+                btn.style.cssText = `background:${mpZonaSeleccionada === n ? '#2ecc71' : '#1e3a2f'}; border:2px solid ${mpZonaSeleccionada === n ? '#f1c40f' : 'white'}; color:white; font-weight:bold; font-size:1.1rem; padding:14px; border-radius:6px; cursor:pointer;`;
+                btn.innerText = n;
+                btn.onclick = () => { mpZonaSeleccionada = n; renderZonasMP(); };
+                grid.appendChild(btn);
+            });
+        }
+
+        function guardarModificacionPunto() {
+            if (!mpZonaSeleccionada) { alert('Selecciona una zona'); return; }
+            const ult = game.history[game.history.length - 1];
+            const accion   = document.getElementById('mp-accion').value;
+            const dorsalSel = document.getElementById('mp-jugadora').value;
+            let nombreJug = '';
+
+            if (mpEquipoSeleccionado === 'T') {
+                const jug = game.convocadas.find(j => j.d === dorsalSel);
+                nombreJug = dorsalSel === '?' ? 'SIN ASIGNAR' : (jug ? jug.n : dorsalSel);
+            } else {
+                nombreJug = dorsalSel === '?' ? 'SIN ASIGNAR' : dorsalSel;
+            }
+
+            ult.accion  = accion;
+            ult.equipo  = mpEquipoSeleccionado === 'T' ? 'TOMARES' : game.rName;
+            ult.jugador = nombreJug;
+            ult.dorsal  = dorsalSel === '?' ? '' : dorsalSel;
+            ult.zona    = mpZonaSeleccionada;
+
+            cerrarModificarPunto();
+            actualizarEstadisticasTiempoReal();
+            guardarPartido();
+
+            // Actualizar log visual
+            const logEl = document.getElementById('log');
+            if (logEl) {
+                const setsRecientes = setsFinalizados.slice(-2).map(s =>
+                    `Set ${s.numero}: ${s.tomares}-${s.rival} (${formatoMs(s.duracion, false)})`
+                ).join(' • ');
+                logEl.innerHTML =
+                    (setsRecientes ? `<div>📊 ${setsRecientes}</div>` : '') +
+                    game.history.slice(-2).reverse().map(h =>
+                        `<div>⚡ ${h.accion} ${h.jugador} [${h.marcador}]</div>`
+                    ).join('');
+            }
+        }
+
+        function cerrarModificarPunto() {
+            document.getElementById('modal-modificar-punto').classList.remove('active');
+            mpZonaSeleccionada = null;
+        }
+
+        // ============================================
+        // MODIFICAR ROTACIÓN
+        // ============================================
+        let rotEditable   = [];  // copia editable de game.rotT
+        let rotSelIdx     = null; // índice seleccionado para intercambio
+        let rotServerEdit = null; // dorsal del sacador editado
+
+        function abrirModificarRotacion() {
+            cerrarModalGestion();
+            rotEditable   = [...game.rotT];
+            rotServerEdit = game.rotT[0]; // el índice 0 siempre es el sacador
+            renderRotGrid();
+            renderServerSelector();
+            document.getElementById('modal-modificar-rotacion').classList.add('active');
+        }
+
+        function renderRotGrid() {
+            // Posiciones visuales según lado
+            // game.tPos 'L' = Tomares abajo: zona orden visual [4,3,2,5,6,1]
+            // Los índices en rotT son [Z1,Z2,Z3,Z4,Z5,Z6] → índice 0=Z1 (sacador)
+            // Queremos mostrar en grid tipo cancha: delantera [Z4,Z3,Z2] / defensa [Z5,Z6,Z1]
+            const ordenIdx = game.tPos === 'L'
+                ? [3, 2, 1, 4, 5, 0]   // Z4,Z3,Z2 arriba · Z5,Z6,Z1 abajo (vista desde dentro)
+                : [0, 5, 4, 1, 2, 3];
+
+            // Dividir en dos filas de 3: delantera (vis) y defensa (def)
+            const vis = ordenIdx.slice(0, 3);
+            const def = ordenIdx.slice(3, 6);
+
+            ['rot-grid-vis', 'rot-grid-def'].forEach((id, rowNum) => {
+                const container = document.getElementById(id);
+                container.innerHTML = '';
+                const fila = rowNum === 0 ? vis : def;
+                fila.forEach(idx => {
+                    const dorsal = rotEditable[idx];
+                    const jug = game.convocadas.find(j => j.d === dorsal);
+                    const esLibero = game.liberos.includes(dorsal);
+                    const esSacador = (idx === rotEditable.indexOf(rotServerEdit));
+                    const seleccionado = rotSelIdx === idx;
+
+                    const btn = document.createElement('div');
+                    btn.style.cssText = `
+                        background:${seleccionado ? '#f1c40f' : esLibero ? 'var(--libero)' : 'var(--color-tomares)'};
+                        color:${seleccionado || esLibero ? '#000' : '#fff'};
+                        border:3px solid ${seleccionado ? '#fff' : esSacador ? '#f1c40f' : 'transparent'};
+                        border-radius:8px; padding:8px 4px; text-align:center;
+                        cursor:pointer; font-weight:bold; font-size:0.75rem;
+                        box-shadow:${esSacador ? '0 0 10px gold' : 'none'};
+                    `;
+                    btn.innerHTML = `<div style="font-size:1rem;">${dorsal}</div><div style="font-size:0.65rem; opacity:0.8;">${jug ? jug.n.split(' ')[0] : ''}</div>${esSacador ? '<div style="font-size:0.7rem;">🏐</div>' : ''}`;
+                    btn.onclick = () => seleccionarPosicionRot(idx);
+                    container.appendChild(btn);
+                });
+            });
+        }
+
+        function seleccionarPosicionRot(idx) {
+            if (rotSelIdx === null) {
+                rotSelIdx = idx;
+            } else if (rotSelIdx === idx) {
+                rotSelIdx = null;
+            } else {
+                // Intercambiar
+                const tmp = rotEditable[rotSelIdx];
+                rotEditable[rotSelIdx] = rotEditable[idx];
+                rotEditable[idx] = tmp;
+                rotSelIdx = null;
+            }
+            renderRotGrid();
+        }
+
+        function renderServerSelector() {
+            const cont = document.getElementById('rot-server-selector');
+            cont.innerHTML = '';
+            rotEditable.forEach(dorsal => {
+                const jug = game.convocadas.find(j => j.d === dorsal);
+                const esSel = rotServerEdit === dorsal;
+                const btn = document.createElement('button');
+                btn.style.cssText = `flex:1; padding:6px 4px; border-radius:6px; border:2px solid ${esSel ? '#f1c40f' : '#333'}; background:${esSel ? '#0d3a6e' : '#222'}; color:${esSel ? '#f1c40f' : '#888'}; font-size:0.7rem; font-weight:bold; cursor:pointer;`;
+                btn.innerText = `${dorsal}\n${jug ? jug.n.split(' ')[0] : ''}`;
+                btn.style.whiteSpace = 'pre';
+                btn.onclick = () => { rotServerEdit = dorsal; renderRotGrid(); renderServerSelector(); };
+                cont.appendChild(btn);
+            });
+        }
+
+        function guardarModificacionRotacion() {
+            // Reordenar rotEditable para que el sacador quede en índice 0
+            const idxServer = rotEditable.indexOf(rotServerEdit);
+            if (idxServer === -1) { alert('Sacadora no encontrada en rotación'); return; }
+
+            // Rotar el array para que el sacador quede en posición 0
+            const nueva = [...rotEditable.slice(idxServer), ...rotEditable.slice(0, idxServer)];
+            game.rotT = nueva;
+            game.server = nueva[0] !== undefined ? 'T' : game.server; // mantener servidor
+
+            cerrarModificarRotacion();
+            render();
+            guardarPartido();
+        }
+
+        function cerrarModificarRotacion() {
+            document.getElementById('modal-modificar-rotacion').classList.remove('active');
+            rotSelIdx = null;
+        }
+
+        // ============================================
+        // EDITAR CONVOCATORIA Y DORSALES EN PARTIDO
+        // ============================================
+        function abrirEditarConvocatoria() {
+            cerrarModalGestion();
+            const lista = document.getElementById('editar-conv-lista');
+            lista.innerHTML = '';
+
+            game.convocadas.forEach((j, idx) => {
+                const esLibero = game.liberos.includes(j.d);
+                const enCancha = game.rotT.includes(j.d);
+                const div = document.createElement('div');
+                div.style.cssText = `display:flex; align-items:center; gap:8px; padding:8px; margin-bottom:6px; background:${enCancha ? '#0d3a6e' : '#1a1a1a'}; border-radius:8px; border:1px solid ${esLibero ? 'var(--libero)' : enCancha ? '#2ecc71' : '#333'};`;
+                div.innerHTML = `
+                    <div style="font-size:0.65rem; color:${enCancha ? '#2ecc71' : '#555'}; min-width:30px; text-align:center;">${enCancha ? '🏐' : ''}</div>
+                    <input type="text" id="edit-dorsal-${idx}" value="${j.d}"
+                        style="width:55px; background:#333; border:1px solid #555; color:#f1c40f; border-radius:6px; padding:6px; text-align:center; font-weight:bold; font-size:0.9rem;">
+                    <input type="text" id="edit-nombre-${idx}" value="${j.n}"
+                        style="flex:1; background:#333; border:1px solid #555; color:white; border-radius:6px; padding:6px; font-size:0.9rem;">
+                    <label style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:${esLibero ? 'var(--libero)' : '#666'}; cursor:pointer;">
+                        <input type="checkbox" id="edit-libero-${idx}" ${esLibero ? 'checked' : ''} style="accent-color:var(--libero); width:16px; height:16px;">L
+                    </label>
+                `;
+                lista.appendChild(div);
+            });
+
+            // Leyenda
+            const leyenda = document.createElement('div');
+            leyenda.style.cssText = 'font-size:0.7rem; color:#555; margin-top:8px; text-align:center;';
+            leyenda.innerHTML = '🏐 = en cancha ahora &nbsp;·&nbsp; L = líbero';
+            lista.appendChild(leyenda);
+
+            document.getElementById('modal-editar-convocatoria').classList.add('active');
+        }
+
+        function guardarEdicionConvocatoria() {
+            const nuevasLiberos = [];
+
+            game.convocadas.forEach((j, idx) => {
+                const dorsalAntiguo = j.d;
+                const nuevoDorsal = document.getElementById(`edit-dorsal-${idx}`)?.value.trim();
+                const nuevoNombre = document.getElementById(`edit-nombre-${idx}`)?.value.trim();
+                const esLibero = document.getElementById(`edit-libero-${idx}`)?.checked;
+
+                if (!nuevoDorsal || !nuevoNombre) return;
+
+                // Actualizar rotación en cancha si cambió el dorsal
+                if (dorsalAntiguo !== nuevoDorsal) {
+                    const idxRot = game.rotT.indexOf(dorsalAntiguo);
+                    if (idxRot !== -1) game.rotT[idxRot] = nuevoDorsal;
+
+                    // Actualizar historial
+                    game.history.forEach(h => {
+                        if (h.dorsal === dorsalAntiguo) h.dorsal = nuevoDorsal;
+                    });
+                    // Actualizar recepciones
+                    if (game.recepciones) {
+                        game.recepciones.forEach(r => {
+                            if (r.dorsal === dorsalAntiguo) r.dorsal = nuevoDorsal;
+                        });
+                    }
+                }
+
+                j.d = nuevoDorsal;
+                j.n = nuevoNombre;
+
+                if (esLibero) nuevasLiberos.push(nuevoDorsal);
+            });
+
+            // Actualizar liberos
+            game.liberos = nuevasLiberos;
+            LIBEROS = nuevasLiberos;
+
+            // Actualizar banquillo
+            game.banquillo = game.convocadas.filter(j => !game.rotT.includes(j.d));
+
+            cerrarEditarConvocatoria();
+            render();
+            guardarPartido();
+            alert('✅ Convocatoria actualizada correctamente');
+        }
+
+        function cerrarEditarConvocatoria() {
+            document.getElementById('modal-editar-convocatoria').classList.remove('active');
+        }
+
+        function formatoMs(ms, incluirHoras) {
+            if (!ms && ms !== 0) return incluirHoras ? '00:00:00' : '00:00';
+            let s = Math.floor(ms/1000), m = Math.floor(s/60), h = Math.floor(m/60);
+            s %= 60; m %= 60;
+            return incluirHoras ? `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}` : `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        function exportarCSV() {
+            game.mTitle = document.getElementById('resumen-match-title').value;
+            game.rName = document.getElementById('resumen-rival-name').value.toUpperCase();
+            
+            const ahora = new Date();
+            const fecha = `${ahora.getDate().toString().padStart(2,'0')}/${(ahora.getMonth()+1).toString().padStart(2,'0')}/${ahora.getFullYear()}`;
+            
+            let csv = `PARTIDO: ${game.mTitle}\n`;
+            csv += `FECHA: ${fecha}\n`;
+            csv += `RIVAL: ${game.rName}\n\n`;
+            
+            csv += "RESUMEN DE SETS\n";
+            setsFinalizados.forEach(s => {
+                csv += `Set ${s.numero};${s.tomares}-${s.rival};${formatoMs(s.duracion, false)}\n`;
+            });
+            csv += "\n";
+            
+            csv += "SET;EQUIPO;JUGADORA;DORSAL;ACCION;ZONA;MARCADOR\n";
+            
+            game.history.forEach(h => {
+                const marcador = h.marcador ? h.marcador.toString() : '';
+                csv += `${h.set};${h.equipo};${h.jugador};${h.dorsal || ''};${h.accion};${h.zona || ''};${marcador}\n`;
+            });
+            
+            const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csv);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Voley_${game.rName}_${ahora.toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            alert('CSV exportado correctamente');
+        }
+
+        function guardarPartido() {
+            game.setsFinalizados = setsFinalizados;
+            localStorage.setItem('voleyGame', JSON.stringify(game));
+        }
+    </script>
+</body>
+</html>
